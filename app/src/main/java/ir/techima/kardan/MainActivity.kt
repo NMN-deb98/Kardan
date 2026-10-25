@@ -138,12 +138,17 @@ private fun saveVault(context: Context, entries: List<VaultEntry>) {
 
 @Composable
 private fun KardanApp() {
+    val context = LocalContext.current
     var tab by remember { mutableIntStateOf(0) }
     var query by remember { mutableStateOf("") }
     var selectedGuide by remember { mutableStateOf<Guide?>(null) }
     var taskText by remember { mutableStateOf("") }
-    var nextId by remember { mutableIntStateOf(1) }
-    var tasks by remember { mutableStateOf(listOf<TaskItem>()) }
+    var nextId by remember { mutableIntStateOf((loadTasks(context).maxOfOrNull { it.id } ?: 0) + 1) }
+    var tasks by remember { mutableStateOf(loadTasks(context)) }
+    var vault by remember { mutableStateOf(loadVault(context)) }
+    var nextVaultId by remember { mutableIntStateOf((vault.maxOfOrNull { it.id } ?: 0) + 1) }
+    LaunchedEffect(tasks) { saveTasks(context, tasks) }
+    LaunchedEffect(vault) { saveVault(context, vault) }
 
     val guides = listOf(
         Guide("امنیت حساب‌های آنلاین", "امنیت", "برای هر حساب رمز عبور یکتا بسازید، تأیید دومرحله‌ای را فعال کنید و کدهای بازیابی را در محل امن نگه دارید."),
@@ -175,7 +180,7 @@ private fun KardanApp() {
                 )
                 1 -> GuidesScreen(guides, query, { query = it }, { selectedGuide = it })
                 2 -> ToolsScreen()
-                else -> TasksScreen(
+                3 -> TasksScreen(
                     tasks = tasks,
                     text = taskText,
                     onText = { taskText = it },
@@ -190,6 +195,15 @@ private fun KardanApp() {
                         tasks = tasks.map { if (it.id == id) it.copy(done = !it.done) else it }
                     },
                     onDelete = { id -> tasks = tasks.filterNot { it.id == id } }
+                )
+                else -> MoreScreen(
+                    context = context,
+                    vault = vault,
+                    onAddVault = { label, username, password ->
+                        vault = vault + VaultEntry(nextVaultId, label, username, password)
+                        nextVaultId += 1
+                    },
+                    onDeleteVault = { id -> vault = vault.filterNot { it.id == id } }
                 )
             }
             selectedGuide?.let { guide ->
@@ -206,6 +220,117 @@ private fun KardanApp() {
 }
 
 @Composable
+
+@Composable
+private fun MoreScreen(
+    context: Context,
+    vault: List<VaultEntry>,
+    onAddVault: (String, String, String) -> Unit,
+    onDeleteVault: (Int) -> Unit
+) {
+    var section by remember { mutableStateOf("بیشتر") }
+    var assistantQuestion by remember { mutableStateOf("") }
+    var assistantAnswer by remember { mutableStateOf("") }
+    var label by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showPasswords by remember { mutableStateOf(false) }
+    val guides = listOf(
+        "امنیت گوشی" to "قفل صفحه را فعال نگه دارید، برنامه‌ها را فقط از منابع معتبر نصب کنید و سیستم‌عامل را به‌روز نگه دارید.",
+        "راهنمای سالمندان" to "متن گوشی را از تنظیمات نمایش بزرگ‌تر کنید، مخاطبان مهم را به علاقه‌مندی‌ها بیفزایید و هرگز اطلاعات بانکی یا رمز یک‌بارمصرف را در اختیار دیگران نگذارید.",
+        "خرید بسته اینترنت" to "اپراتور خود را انتخاب کنید و خرید را فقط در اپلیکیشن یا وب‌سایت رسمی اپراتور انجام دهید."
+    )
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Text("امکانات بیشتر", fontSize = 24.sp, fontWeight = FontWeight.Bold) }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("دستیار", "رمزها", "آموزش ویدئویی", "راهنما").forEach { name ->
+                    FilterChip(selected = section == name, onClick = { section = name }, label = { Text(name) })
+                }
+            }
+        }
+        when (section) {
+            "دستیار" -> {
+                item { Text("دستیار کاردان", fontSize = 19.sp, fontWeight = FontWeight.Bold) }
+                item { Text("پاسخ‌های این نسخه آفلاین و مبتنی بر راهنمای داخلی‌اند؛ این یک مدل هوش مصنوعی آنلاین نیست.", color = Muted) }
+                item { OutlinedTextField(value = assistantQuestion, onValueChange = { assistantQuestion = it }, modifier = Modifier.fillMaxWidth(), label = { Text("سؤالت") }) }
+                item {
+                    Button(onClick = {
+                        val q = assistantQuestion.lowercase()
+                        assistantAnswer = when {
+                            listOf("رمز", "هک", "امنیت").any { q.contains(it) } -> "برای هر حساب رمز یکتا انتخاب کن، تأیید دومرحله‌ای را فعال کن و رمز یا کد یک‌بارمصرف را برای کسی نفرست."
+                            listOf("اینترنت", "بسته").any { q.contains(it) } -> "از بخش «بسته اینترنت» فقط وارد درگاه رسمی اپراتورت شو و پیش از پرداخت، نام اپراتور و مبلغ را بررسی کن."
+                            listOf("سالمند", "بزرگ", "فونت").any { q.contains(it) } -> "از تنظیمات نمایش گوشی، اندازه نوشته و بزرگ‌نمایی را افزایش بده و مخاطبان ضروری را در دسترس سریع قرار بده."
+                            listOf("کار", "برنامه", "بهره‌وری").any { q.contains(it) } -> "کار را به یک قدم کوچک تقسیم کن، در «کارهای من» ثبتش کن و پس از پایان علامت بزن."
+                            else -> "پاسخ آفلاین محدود است. موضوع را با واژه‌های «امنیت»، «اینترنت»، «سالمندان» یا «مدیریت کار» دقیق‌تر بنویس."
+                        }
+                    }, enabled = assistantQuestion.isNotBlank()) { Text("دریافت پاسخ") }
+                }
+                if (assistantAnswer.isNotBlank()) item { Text(assistantAnswer, modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(16.dp)).padding(16.dp)) }
+            }
+            "رمزها" -> {
+                item { Text("خزانه رمزها", fontSize = 19.sp, fontWeight = FontWeight.Bold) }
+                item { Text("رمزها روی همین دستگاه با AES-GCM رمزنگاری می‌شوند. این نسخه قفل جداگانه با رمز اصلی ندارد؛ برای نگه‌داری رمزهای بسیار حساس، از مدیر رمز معتبر استفاده کنید.", color = Muted, fontSize = 12.sp) }
+                item { OutlinedTextField(value = label, onValueChange = { label = it }, modifier = Modifier.fillMaxWidth(), label = { Text("نام حساب یا سایت") }, singleLine = true) }
+                item { OutlinedTextField(value = username, onValueChange = { username = it }, modifier = Modifier.fillMaxWidth(), label = { Text("نام کاربری") }, singleLine = true) }
+                item { OutlinedTextField(value = password, onValueChange = { password = it }, modifier = Modifier.fillMaxWidth(), label = { Text("رمز عبور") }, singleLine = true, visualTransformation = if (showPasswords) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation()) }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { showPasswords = !showPasswords }) { Text(if (showPasswords) "پنهان‌کردن رمزها" else "نمایش رمزها") }
+                        Button(onClick = {
+                            if (label.isNotBlank() && password.isNotBlank()) {
+                                onAddVault(label.trim(), username.trim(), password)
+                                label = ""; username = ""; password = ""
+                            }
+                        }, enabled = label.isNotBlank() && password.isNotBlank()) { Text("ذخیره رمز") }
+                    }
+                }
+                items(vault, key = { it.id }) { entry ->
+                    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(entry.label, fontWeight = FontWeight.Bold)
+                        Text("نام کاربری: " + entry.username, color = Muted, fontSize = 12.sp)
+                        Text("رمز: " + if (showPasswords) entry.password else "••••••••", color = Mint)
+                        TextButton(onClick = { onDeleteVault(entry.id) }) { Text("حذف") }
+                    }
+                }
+            }
+            "آموزش ویدئویی" -> {
+                item { Text("آموزش‌های تصویری و فیلم", fontSize = 19.sp, fontWeight = FontWeight.Bold) }
+                item { Text("ویدئوها در مرورگر یا برنامه مناسب باز می‌شوند و به اینترنت نیاز دارند.", color = Muted) }
+                listOf(
+                    "آموزش امنیت موبایل" to "https://www.youtube.com/results?search_query=آموزش+امنیت+موبایل",
+                    "آموزش کار با گوشی برای سالمندان" to "https://www.youtube.com/results?search_query=آموزش+گوشی+برای+سالمندان",
+                    "آموزش مدیریت هزینه‌ها" to "https://www.youtube.com/results?search_query=آموزش+مدیریت+هزینه"
+                ).forEach { (title, url) ->
+                    item { QuickTile(title, "مشاهده ویدئوهای مرتبط", Icons.Default.PlayCircle, { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) }
+                }
+            }
+            "راهنما" -> {
+                item { Text("راهنمای کاربردی", fontSize = 19.sp, fontWeight = FontWeight.Bold) }
+                items(guides) { guide ->
+                    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(guide.first, fontWeight = FontWeight.Bold)
+                        Text(guide.second, color = Muted)
+                        if (guide.first == "خرید بسته اینترنت") {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://my.mci.ir/"))) }) { Text("همراه اول") }
+                                TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://my.irancell.ir/"))) }) { Text("ایرانسل") }
+                                TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://my.rightel.ir/"))) }) { Text("رایتل") }
+                            }
+                        }
+                    }
+                }
+            }
+            else -> {
+                item { QuickTile("دستیار آفلاین", "راهنمایی پایه و پاسخ‌های محدود", Icons.Default.Psychology, { section = "دستیار" }) }
+                item { QuickTile("خزانه رمزها", "نگه‌داری رمزنگاری‌شده روی دستگاه", Icons.Default.Lock, { section = "رمزها" }) }
+                item { QuickTile("آموزش ویدئویی", "ویدئوهای مرتبط در وب", Icons.Default.PlayCircle, { section = "آموزش ویدئویی" }) }
+                item { QuickTile("راهنمای سالمندان و اینترنت", "راهنمای ساده و لینک‌های رسمی", Icons.Default.SupportAgent, { section = "راهنما" }) }
+            }
+        }
+    }
+}
+
 private fun HomeScreen(taskCount: Int, onGuides: () -> Unit, onTools: () -> Unit, onTasks: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -244,7 +369,7 @@ private fun HomeScreen(taskCount: Int, onGuides: () -> Unit, onTools: () -> Unit
         item { QuickTile("کارهای من", "$taskCount کار در انتظار انجام", Icons.Default.CheckCircle, onTasks) }
         item {
             Text(
-                "نسخهٔ اولیه · اطلاعات کارها فعلاً فقط تا زمان بسته‌شدن برنامه نگه‌داری می‌شود.",
+                "کارها روی همین دستگاه ذخیره می‌شوند؛ برای اطلاعات حساس دستگاه خود را ایمن نگه دارید.",
                 color = Muted,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
