@@ -37,11 +37,14 @@ jobs:
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[release]')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.2
+          tag_name: v1.0.3
           target_commitish: ${{ github.sha }}
-          name: کاردان 1.0.2
+          name: کاردان 1.0.3
           body: |
-            ## کاردان 1.0.2
+            ## کاردان 1.0.3
+
+            - لوگوی اختصاصی کاردان در آیکون نصب و صفحهٔ اصلی برنامه
+            - نام انگلیسی پروژه Kardan و نام نمایشی فارسی کاردان
 
             نخستین انتشار رسمی عمومی نسخهٔ MVP کاردان.
 
