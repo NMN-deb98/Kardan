@@ -1,0 +1,1 @@
+# Kardan app ProGuard rules.
