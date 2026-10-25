@@ -29,7 +29,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Kardan-debug-apk
+          name: Kardan-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
@@ -37,18 +37,22 @@ jobs:
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[release]')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.1
+          tag_name: v1.0.2
           target_commitish: ${{ github.sha }}
-          name: کاردان 1.0.1
+          name: کاردان 1.0.2
           body: |
-            ## کاردان 1.0.1
-            - ذخیره دائمی کارها روی دستگاه
-            - خزانه رمزها با رمزنگاری AES-GCM محلی
-            - راهنمای آفلاین کاربردی
-            - بخش راهنمای سالمندان و خرید بسته اینترنت از پیوندهای رسمی اپراتورها
-            - پیوند به ویدئوهای آموزشی مرتبط
+            ## کاردان 1.0.2
+
+            نخستین انتشار رسمی عمومی نسخهٔ MVP کاردان.
+
             - رابط فارسی و راست‌چین
-            این APK برای نصب مستقیم ساخته شده است. این نسخه هنوز تست فیزیکی روی دستگاه‌های مختلف نشده و دستیار آن آفلاین و محدود است.
+            - راهنماهای کاربردی و جست‌وجو
+            - ماشین‌حساب آفلاین
+            - فهرست کارها با افزودن، تکمیل و حذف
+            - نگه‌داری فهرست کارها روی دستگاه
+
+            **محدودیت‌ها:** این نسخه روی دستگاه فیزیکی و طیف گسترده‌ای از دستگاه‌های اندرویدی آزمایش نشده است. این نسخه شامل تقویم شمسی، اعلان‌ها، همگام‌سازی ابری یا خزانهٔ رمزها نیست.
+            آزمون‌های واحد و ساخت APK در GitHub Actions اجرا می‌شوند. قبل از نصب، از داده‌های مهم نسخهٔ پشتیبان داشته باشید.
           files: app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
           draft: false
