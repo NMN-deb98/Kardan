@@ -3,6 +3,7 @@ package ir.techima.kardan
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 
 private val Ink = Color(0xFF101827)
 private val Panel = Color(0xFF1B2638)
@@ -135,9 +137,11 @@ private fun HomeScreen(taskCount: Int, onGuides: () -> Unit, onTools: () -> Unit
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.size(48.dp).background(Mint, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Bolt, null, tint = Ink, modifier = Modifier.size(30.dp))
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.kardan_logo),
+                    contentDescription = "لوگوی کاردان",
+                    modifier = Modifier.size(52.dp)
+                )
                 Column {
                     Text("کاردان", fontSize = 27.sp, fontWeight = FontWeight.Black)
                     Text("کارهایت را هوشمندانه انجام بده", color = Muted, fontSize = 13.sp)
