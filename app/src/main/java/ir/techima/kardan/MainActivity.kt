@@ -1,6 +1,17 @@
 package ir.techima.kardan
 
 import android.os.Bundle
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.util.Base64
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import java.security.KeyStore
+import org.json.JSONArray
+import org.json.JSONObject
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -22,6 +33,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalContext
 
 private val Ink = Color(0xFF101827)
 private val Panel = Color(0xFF1B2638)
@@ -57,6 +69,72 @@ private fun KardanTheme(content: @Composable () -> Unit) {
 
 private data class Guide(val title: String, val category: String, val description: String)
 private data class TaskItem(val id: Int, val title: String, val done: Boolean)
+private data class VaultEntry(val id: Int, val label: String, val username: String, val password: String)
+
+private const val PREFS = "kardan_local"
+private const val TASKS_KEY = "tasks_json"
+private const val VAULT_KEY = "vault_encrypted"
+private const val KEY_ALIAS = "kardan_vault_key"
+
+private fun loadTasks(context: Context): List<TaskItem> = try {
+    val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(TASKS_KEY, "[]") ?: "[]"
+    val arr = JSONArray(raw)
+    (0 until arr.length()).map { i ->
+        val o = arr.getJSONObject(i)
+        TaskItem(o.getInt("id"), o.getString("title"), o.optBoolean("done"))
+    }
+} catch (_: Exception) { emptyList() }
+
+private fun saveTasks(context: Context, tasks: List<TaskItem>) {
+    val arr = JSONArray()
+    tasks.forEach { t -> arr.put(JSONObject().put("id", t.id).put("title", t.title).put("done", t.done)) }
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(TASKS_KEY, arr.toString()).apply()
+}
+
+private fun vaultKey(): SecretKey {
+    val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+    (store.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
+    val generator = KeyGenerator.getInstance("AES", "AndroidKeyStore")
+    generator.init(android.security.keystore.KeyGenParameterSpec.Builder(
+        KEY_ALIAS,
+        android.security.keystore.KeyProperties.PURPOSE_ENCRYPT or android.security.keystore.KeyProperties.PURPOSE_DECRYPT
+    ).setBlockModes(android.security.keystore.KeyProperties.BLOCK_MODE_GCM)
+        .setEncryptionPaddings(android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE)
+        .setRandomizedEncryptionRequired(true).build())
+    return generator.generateKey()
+}
+
+private fun encryptVault(raw: String): String {
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    cipher.init(Cipher.ENCRYPT_MODE, vaultKey())
+    val cipherText = cipher.doFinal(raw.toByteArray(Charsets.UTF_8))
+    return Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + ":" +
+        Base64.encodeToString(cipherText, Base64.NO_WRAP)
+}
+
+private fun decryptVault(raw: String): String {
+    val parts = raw.split(":", limit = 2)
+    if (parts.size != 2) return "[]"
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    cipher.init(Cipher.DECRYPT_MODE, vaultKey(), GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)))
+    return String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)
+}
+
+private fun loadVault(context: Context): List<VaultEntry> = try {
+    val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(VAULT_KEY, null) ?: "[]"
+    val arr = JSONArray(if (raw == "[]") raw else decryptVault(raw))
+    (0 until arr.length()).map { i ->
+        val o = arr.getJSONObject(i)
+        VaultEntry(o.getInt("id"), o.getString("label"), o.getString("username"), o.getString("password"))
+    }
+} catch (_: Exception) { emptyList() }
+
+private fun saveVault(context: Context, entries: List<VaultEntry>) {
+    val arr = JSONArray()
+    entries.forEach { e -> arr.put(JSONObject().put("id", e.id).put("label", e.label).put("username", e.username).put("password", e.password)) }
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+        .putString(VAULT_KEY, encryptVault(arr.toString())).apply()
+}
 
 @Composable
 private fun KardanApp() {
@@ -83,6 +161,7 @@ private fun KardanApp() {
                 NavigationBarItem(selected = tab == 1, onClick = { tab = 1 }, icon = { Icon(Icons.Default.MenuBook, null) }, label = { Text("راهنماها") })
                 NavigationBarItem(selected = tab == 2, onClick = { tab = 2 }, icon = { Icon(Icons.Default.Calculate, null) }, label = { Text("ابزارها") })
                 NavigationBarItem(selected = tab == 3, onClick = { tab = 3 }, icon = { Icon(Icons.Default.CheckCircle, null) }, label = { Text("کارهای من") })
+                NavigationBarItem(selected = tab == 4, onClick = { tab = 4 }, icon = { Icon(Icons.Default.Apps, null) }, label = { Text("بیشتر") })
             }
         }
     ) { padding ->
