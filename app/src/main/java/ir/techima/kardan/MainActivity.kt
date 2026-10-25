@@ -146,13 +146,6 @@ private fun HomeScreen(taskCount: Int, onGuides: () -> Unit, onTools: () -> Unit
         }
         item {
             Column(
-                Modifier.fillMaxWidth().background(
-                    androidx.compose.ui brush = null
-                )
-            ) {}
-        }
-        item {
-            Column(
                 Modifier.fillMaxWidth()
                     .background(Panel, RoundedCornerShape(24.dp))
                     .padding(20.dp),
