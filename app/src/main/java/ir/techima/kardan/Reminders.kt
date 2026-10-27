@@ -135,7 +135,7 @@ class ReminderReceiver : BroadcastReceiver() {
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val a = intent.action
-        if (a == Intent.ACTION_BOOT_COMPLETED || a == Intent.ACTION_MY_PACKAGE_REPLACED || a == "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED") {
+        if (a == Intent.ACTION_BOOT_COMPLETED || a == Intent.ACTION_MY_PACKAGE_REPLACED || a == "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" || a == Intent.ACTION_TIMEZONE_CHANGED || a == Intent.ACTION_TIME_CHANGED) {
             Reminders.rescheduleAll(context)
         }
     }

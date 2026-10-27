@@ -52,6 +52,12 @@ fun SettingsScreen(state: AppState, title: String, onBack: () -> Unit) {
                 Chip(n, Math.abs(s.fontScale - f) < 0.01f) { state.updateSettings(s.copy(fontScale = f)) }
             }
         }
+        SectionTitle("نوع ارقام")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Chip("فارسی (۱۲۳)", !s.latinDigits) { state.updateSettings(s.copy(latinDigits = false)) }
+            Chip("انگلیسی (123)", s.latinDigits) { state.updateSettings(s.copy(latinDigits = true)) }
+        }
+        Text("شناسه‌ها، رمزها و شماره‌ها همیشه برای کپی‌کردن بدون تغییر می‌مانند.", color = c.muted, style = MaterialTheme.typography.bodySmall)
         KCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {

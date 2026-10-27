@@ -13,12 +13,23 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
+
+val Vazir = FontFamily(
+    Font(R.font.vazirmatn_regular, FontWeight.Normal),
+    Font(R.font.vazirmatn_medium, FontWeight.Medium),
+    Font(R.font.vazirmatn_medium, FontWeight.SemiBold),
+    Font(R.font.vazirmatn_bold, FontWeight.Bold),
+    Font(R.font.vazirmatn_black, FontWeight.Black)
+)
 
 @Immutable
 class KColors(
@@ -78,21 +89,23 @@ fun KardanTheme(settings: Settings, content: @Composable () -> Unit) {
     val base = LocalDensity.current
     val scale = (if (settings.senior) maxOf(settings.fontScale, 1.3f) else settings.fontScale).coerceIn(0.85f, 1.8f)
     val typography = Typography(
-        headlineLarge = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Black, lineHeight = 38.sp),
-        headlineMedium = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 34.sp),
-        titleLarge = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 30.sp),
-        titleMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold, lineHeight = 26.sp),
-        bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 27.sp),
-        bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 24.sp),
-        bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 20.sp),
-        labelLarge = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
-        labelMedium = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        headlineLarge = TextStyle(fontFamily = Vazir, fontSize = 28.sp, fontWeight = FontWeight.Black, lineHeight = 38.sp),
+        headlineMedium = TextStyle(fontFamily = Vazir, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 34.sp),
+        titleLarge = TextStyle(fontFamily = Vazir, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 30.sp),
+        titleMedium = TextStyle(fontFamily = Vazir, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, lineHeight = 26.sp),
+        bodyLarge = TextStyle(fontFamily = Vazir, fontSize = 16.sp, lineHeight = 27.sp),
+        bodyMedium = TextStyle(fontFamily = Vazir, fontSize = 14.sp, lineHeight = 24.sp),
+        bodySmall = TextStyle(fontFamily = Vazir, fontSize = 12.sp, lineHeight = 20.sp),
+        labelLarge = TextStyle(fontFamily = Vazir, fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+        labelMedium = TextStyle(fontFamily = Vazir, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     )
     CompositionLocalProvider(
         LocalK provides k,
         LocalLayoutDirection provides LayoutDirection.Rtl,
         LocalDensity provides Density(base.density, base.fontScale * scale)
     ) {
-        MaterialTheme(colorScheme = scheme, typography = typography, content = content)
+        MaterialTheme(colorScheme = scheme, typography = typography) {
+            ProvideTextStyle(typography.bodyMedium) { content() }
+        }
     }
 }

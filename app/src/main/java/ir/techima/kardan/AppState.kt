@@ -63,6 +63,7 @@ class AppState(val ctx: Context) {
         contacts.clear(); contacts.addAll(Repo.loadContacts(ctx))
         favorites.clear(); favorites.addAll(Repo.loadFavorites(ctx))
         settings = Repo.loadSettings(ctx)
+        Persian.latin = settings.latinDigits
         notifOk = Reminders.canNotify(ctx)
         val p = ctx.getSharedPreferences("kardan_local", Context.MODE_PRIVATE)
         timerEnd = p.getLong("timer_end", 0L)
@@ -134,7 +135,7 @@ class AppState(val ctx: Context) {
         Repo.saveFavorites(ctx, favorites.toList())
     }
 
-    fun updateSettings(s: Settings) { settings = s; Repo.saveSettings(ctx, s) }
+    fun updateSettings(s: Settings) { settings = s; Persian.latin = s.latinDigits; Repo.saveSettings(ctx, s) }
 
     // ---------------------------------------------------------------- timer (also rings with the app closed)
     fun startTimer(seconds: Int): String {

@@ -39,7 +39,9 @@ data class Settings(
     val theme: Int = 0,
     val senior: Boolean = false,
     val fontScale: Float = 1f,
-    val reduceMotion: Boolean = false
+    val reduceMotion: Boolean = false,
+    /** true = ارقام انگلیسی (۱۲۳ → 123) */
+    val latinDigits: Boolean = false
 )
 
 object Categories {

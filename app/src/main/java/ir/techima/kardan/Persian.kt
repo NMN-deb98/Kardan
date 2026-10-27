@@ -5,9 +5,13 @@ object Persian {
     private const val FA = "۰۱۲۳۴۵۶۷۸۹"
     private const val AR = "٠١٢٣٤٥٦٧٨٩"
 
-    /** Converts Latin digits in [value] to Persian digits. */
+    /** When true, [digits] leaves Latin digits untouched (user preference). */
+    @Volatile var latin: Boolean = false
+
+    /** Converts Latin digits in [value] to Persian digits (unless the user chose Latin digits). */
     fun digits(value: Any?): String {
         val s = value?.toString() ?: return ""
+        if (latin) return s
         val sb = StringBuilder(s.length)
         for (c in s) sb.append(if (c in '0'..'9') FA[c - '0'] else c)
         return sb.toString()

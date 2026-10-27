@@ -88,12 +88,13 @@ object Repo {
         val p = prefs(c)
         return Settings(
             theme = p.getInt("s_theme", 0), senior = p.getBoolean("s_senior", false),
-            fontScale = p.getFloat("s_font", 1f), reduceMotion = p.getBoolean("s_motion", false)
+            fontScale = p.getFloat("s_font", 1f), reduceMotion = p.getBoolean("s_motion", false),
+            latinDigits = p.getBoolean("s_latin", false)
         )
     }
     fun saveSettings(c: Context, s: Settings) {
         prefs(c).edit().putInt("s_theme", s.theme).putBoolean("s_senior", s.senior)
-            .putFloat("s_font", s.fontScale).putBoolean("s_motion", s.reduceMotion).apply()
+            .putFloat("s_font", s.fontScale).putBoolean("s_motion", s.reduceMotion).putBoolean("s_latin", s.latinDigits).apply()
     }
 
     // ---------- backup (everything except the password vault)

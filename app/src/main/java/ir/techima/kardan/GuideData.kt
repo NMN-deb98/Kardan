@@ -28,13 +28,13 @@ object GuideData {
 
     val categories = listOf(
         "گوشی و عیب‌یابی", "اتصال‌ها", "پیام‌رسان‌ها", "خرید اینترنتی",
-        "اینترنت و اپراتورها", "امنیت و حریم خصوصی", "فایل و پشتیبان", "سالمندان و کم‌تجربه‌ها"
+        "اینترنت و اپراتورها", "امنیت و حریم خصوصی", "فایل و پشتیبان", "سالمندان و کم‌تجربه‌ها", "قطعی و دسترسی"
     )
 
     private val c1 = categories[0]; private val c2 = categories[1]; private val c3 = categories[2]; private val c4 = categories[3]
     private val c5 = categories[4]; private val c6 = categories[5]; private val c7 = categories[6]; private val c8 = categories[7]
 
-    val all: List<Guide> = listOf(
+    private val core: List<Guide> = listOf(
         // ---------------------------------------------------------------- گوشی و عیب‌یابی
         Guide("slow-phone", "گوشی‌ام کند شده؛ چه کنم؟", c1,
             "از ساده‌ترین و بی‌خطرترین کارها شروع کنید تا به راه‌حل‌های بزرگ‌تر برسید.",
@@ -473,7 +473,9 @@ object GuideData {
             emptyList(), null, keywords = "تماس تصویری ویدیو کال خانواده")
     )
 
-    private fun operators() = listOf(
+    val all: List<Guide> by lazy { core + GuideExtra.items }
+
+    fun operators() = listOf(
         GuideLink("همراه اول (my.mci.ir)", "https://my.mci.ir"),
         GuideLink("ایرانسل (my.irancell.ir)", "https://my.irancell.ir"),
         GuideLink("رایتل (my.rightel.ir)", "https://my.rightel.ir")
