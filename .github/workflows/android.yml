@@ -23,9 +23,21 @@ jobs:
         with:
           gradle-version: "8.9"
       - name: Run unit tests
-        run: gradle --no-daemon testDebugUnitTest
+        run: |
+          set -o pipefail
+          gradle --no-daemon testDebugUnitTest 2>&1 | tee test.log
       - name: Build installable debug APK
-        run: gradle --no-daemon assembleDebug
+        run: |
+          set -o pipefail
+          gradle --no-daemon assembleDebug 2>&1 | tee build.log
+      - name: Publish build log tail on failure
+        if: failure()
+        run: |
+          mkdir -p /tmp/ci && cd /tmp/ci
+          { echo "== run ${{ github.run_id }} sha ${{ github.sha }}"; for f in "$GITHUB_WORKSPACE/build.log" "$GITHUB_WORKSPACE/test.log"; do [ -f "$f" ] && { echo "--- $(basename $f) errors"; grep -E "^e: |error:|FAILED|Exception|What went wrong" -A3 "$f" | head -150; echo "--- tail"; tail -40 "$f"; }; done; } > log.txt || true
+          git init -q . && git config user.name ci && git config user.email ci@example.com
+          git checkout -q -b ci-logs && cp log.txt log.txt.bak && git add log.txt && git commit -q -m "ci log ${{ github.run_id }}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-logs
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -37,25 +49,15 @@ jobs:
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[release]')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.3
+          tag_name: v1.1.0
           target_commitish: ${{ github.sha }}
-          name: کاردان 1.0.3
+          name: کاردان 1.1.0
           body: |
-            ## کاردان 1.0.3
+            ## کاردان 1.1.0
 
-            - لوگوی اختصاصی کاردان در آیکون نصب و صفحهٔ اصلی برنامه
-            - نام انگلیسی پروژه Kardan و نام نمایشی فارسی کاردان
+            بازطراحی کامل با دستیار آفلاین، راهنماهای گام‌به‌گام، برنامه‌ریز با تقویم شمسی و یادآور، ابزارهای روزمره، گاوصندوق رمز، اطلاعات دستگاه، پشتیبان‌گیری، حالت سالمندان و تم روشن/تیره.
 
-            نخستین انتشار رسمی عمومی نسخهٔ MVP کاردان.
-
-            - رابط فارسی و راست‌چین
-            - راهنماهای کاربردی و جست‌وجو
-            - ماشین‌حساب آفلاین
-            - فهرست کارها با افزودن، تکمیل و حذف
-            - نگه‌داری فهرست کارها روی دستگاه
-
-            **محدودیت‌ها:** این نسخه روی دستگاه فیزیکی و طیف گسترده‌ای از دستگاه‌های اندرویدی آزمایش نشده است. این نسخه شامل تقویم شمسی، اعلان‌ها، همگام‌سازی ابری یا خزانهٔ رمزها نیست.
-            آزمون‌های واحد و ساخت APK در GitHub Actions اجرا می‌شوند. قبل از نصب، از داده‌های مهم نسخهٔ پشتیبان داشته باشید.
+            **محدودیت‌ها:** نسخهٔ آزمایشی است و روی دستگاه‌های مختلف کامل آزمایش نشده. دستیار آفلاین است و به همهٔ برنامه‌های گوشی دسترسی ندارد. هیچ خرید، ارسال یا حذفی بدون تأیید کاربر انجام نمی‌شود. گاوصندوق امنیت مطلق را تضمین نمی‌کند و در فایل پشتیبان نیست.
           files: app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
           draft: false
