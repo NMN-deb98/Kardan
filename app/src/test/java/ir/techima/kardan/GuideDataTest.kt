@@ -29,3 +29,19 @@ class GuideDataTest {
         assertEquals("۱۲", Persian.digits(12))
     }
 }
+
+class VisualGuideTest {
+    @Test fun extractsPath() {
+        val p = VisualGuide.path("ابتدا ببینید چه چیزی بیشترین جا را گرفته: تنظیمات ← حافظه (Storage).")!!
+        assertEquals(listOf("تنظیمات", "حافظه"), p)
+    }
+    @Test fun noPathWithoutArrow() { assertEquals(null, VisualGuide.path("گوشی را خاموش و روشن کنید.")) }
+    @Test fun longLastSegmentIsTrimmed() {
+        val p = VisualGuide.path("داخل برنامه: تنظیمات ← اعلان‌ها را باز کنید و برای پیام‌ها تنظیم کنید.")!!
+        assertEquals("اعلان‌ها", p.last())
+    }
+    @Test fun guidesHaveVisuals() {
+        val withPath = GuideData.all.sumOf { g -> g.steps.count { VisualGuide.path(it) != null } }
+        assertTrue(withPath >= 5)
+    }
+}

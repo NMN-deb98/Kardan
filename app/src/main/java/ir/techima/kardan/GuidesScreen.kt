@@ -86,6 +86,7 @@ fun GuideDetailScreen(state: AppState, id: String) {
             }, icon = Icons.Filled.VolumeUp)
             KOutlineButton("اشتراک", { host.share(g.title + "\n\n" + g.steps.mapIndexed { i, s -> "${i + 1}. $s" }.joinToString("\n") + "\n\n— کاردان") }, icon = Icons.Filled.Share)
         }
+        GuideHero(g.title, g.category)
         Text(g.summary, style = MaterialTheme.typography.bodyLarge, color = c.text)
         g.warning?.let { w ->
             KCard {
@@ -103,7 +104,10 @@ fun GuideDetailScreen(state: AppState, id: String) {
                     Box(Modifier.size(32.dp).clip(CircleShape).background(if (on) c.ok else c.cardHigh), contentAlignment = Alignment.Center) {
                         Text(if (on) "✓" else Persian.digits(i + 1), color = if (on) c.onPrimary else c.text, fontWeight = FontWeight.Bold)
                     }
-                    Text(s, style = MaterialTheme.typography.bodyLarge, color = if (on) c.muted else c.text, modifier = Modifier.weight(1f))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(s, style = MaterialTheme.typography.bodyLarge, color = if (on) c.muted else c.text)
+                        StepVisual(s)
+                    }
                 }
             }
         }
