@@ -225,8 +225,6 @@ private fun CalendarPane(state: AppState) {
     }, Modifier.fillMaxWidth(), icon = Icons.Filled.Add)
 }
 
-private fun Modifier.padding(2.dp): Modifier = this.then(Modifier.padding(horizontal = 0.dp)).let { it }
-
 @Composable
 fun TaskEditScreen(state: AppState, id: Long?, prefill: String) {
     val c = K.c
