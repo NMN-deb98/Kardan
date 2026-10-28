@@ -1,6 +1,7 @@
 package ir.techima.kardan
 
 import android.net.Uri
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -70,7 +71,7 @@ fun PdfToolsScreen(state: AppState, title: String, onBack: () -> Unit) {
         list.toList().forEachIndexed { i, u ->
             KCard(padding = 10.dp) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(Persian.digits(i + 1) + ". " + PdfOps.nameOf(state.ctx, u), color = c.text, modifier = Modifier.weight(1f), maxLines = 1)
+                    Text(Persian.digits(i + 1) + ". " + PdfOps.nameOf(state.ctx, u), color = c.text, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     IconButton(onClick = { if (i > 0) { val t = list[i]; list[i] = list[i - 1]; list[i - 1] = t } }) { Icon(Icons.Filled.ArrowUpward, "بالا", tint = c.muted) }
                     IconButton(onClick = { if (i < list.size - 1) { val t = list[i]; list[i] = list[i + 1]; list[i + 1] = t } }) { Icon(Icons.Filled.ArrowDownward, "پایین", tint = c.muted) }
                     IconButton(onClick = { list.removeAt(i) }) { Icon(Icons.Filled.Close, "حذف از فهرست", tint = c.muted) }
@@ -127,7 +128,7 @@ fun PdfToolsScreen(state: AppState, title: String, onBack: () -> Unit) {
                 KOutlineButton(if (one == null) "انتخاب عکس" else "انتخاب عکس دیگر", { host.pickDocuments(arrayOf("image/*"), false) { l -> if (l.isNotEmpty()) { one = l[0]; result = null } } }, Modifier.fillMaxWidth(), icon = Icons.Filled.Image)
                 if (one != null) {
                     KCard {
-                        Text(PdfOps.nameOf(state.ctx, one!!), color = c.text, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                        Text(PdfOps.nameOf(state.ctx, one!!), color = c.text, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text("بزرگ‌ترین ضلع (پیکسل)", color = c.muted)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                             listOf(1080, 1600, 2400, 4000).forEach { m -> Chip(Persian.digits(m), maxSide == m) { maxSide = m } }

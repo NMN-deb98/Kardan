@@ -1,6 +1,7 @@
 package ir.techima.kardan
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -59,7 +60,7 @@ fun GuidesScreen(state: AppState) {
                     IconBadge(Icons.Filled.MenuBook, c.accent)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(g.title, style = MaterialTheme.typography.titleMedium, color = c.text)
-                        Text(g.summary, style = MaterialTheme.typography.bodySmall, color = c.muted, maxLines = 2)
+                        Text(g.summary, style = MaterialTheme.typography.bodySmall, color = c.muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     if (state.favorites.contains("guide:" + g.id)) Icon(Icons.Filled.Star, null, tint = c.warn)
                 }

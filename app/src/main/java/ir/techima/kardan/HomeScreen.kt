@@ -1,6 +1,7 @@
 package ir.techima.kardan
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -174,6 +175,6 @@ fun ToolTile(t: ToolInfo, modifier: Modifier = Modifier, onClick: () -> Unit) {
     ) {
         IconBadge(t.icon, t.tint(c))
         Text(t.title, style = MaterialTheme.typography.titleMedium, color = c.text)
-        Text(t.desc, style = MaterialTheme.typography.bodySmall, color = c.muted, maxLines = 2)
+        Text(t.desc, style = MaterialTheme.typography.bodySmall, color = c.muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }

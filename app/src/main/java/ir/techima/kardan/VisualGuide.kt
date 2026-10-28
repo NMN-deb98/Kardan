@@ -1,6 +1,7 @@
 package ir.techima.kardan
 
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -138,14 +139,14 @@ private fun MiniPhone(title: String, target: String?, seed: Int, done: Boolean) 
             Box(Modifier.width(22.dp).height(5.dp).clip(CircleShape).background(c.line))
             Box(Modifier.width(30.dp).height(5.dp).clip(CircleShape).background(c.line))
         }
-        Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = c.text, maxLines = 1, modifier = Modifier.padding(top = 2.dp))
+        Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
         val targetRow = if (done) -1 else 1 + (seed % 3)
         for (i in 0 until 5) {
             if (i == targetRow && target != null) {
                 Box(Modifier.fillMaxWidth().height(30.dp).clip(RoundedCornerShape(10.dp)).background(c.primary.copy(alpha = 0.18f)).border(1.5.dp, c.primary, RoundedCornerShape(10.dp)), contentAlignment = Alignment.CenterStart) {
                     Row(Modifier.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         Box(Modifier.size(12.dp).scale(p).clip(CircleShape).background(c.primary))
-                        Text(target, fontSize = 10.sp, color = c.text, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(target, fontSize = 10.sp, color = c.text, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             } else {

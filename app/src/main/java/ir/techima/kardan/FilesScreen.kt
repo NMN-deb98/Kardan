@@ -1,6 +1,7 @@
 package ir.techima.kardan
 
 import android.net.Uri
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -161,7 +162,7 @@ fun FilesScreen(state: AppState, title: String, onBack: () -> Unit) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 IconBadge(iconOf(e), if (e.isDir) c.warn else c.accent, 40.dp)
                                 Column(Modifier.weight(1f)) {
-                                    Text(e.name, style = MaterialTheme.typography.titleMedium, color = c.text, maxLines = 2)
+                                    Text(e.name, style = MaterialTheme.typography.titleMedium, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     Text((if (e.isDir) "پوشه" else FileOps.sizeText(e.size)) + (if (e.modified > 0) " · " + Jalali.format(e.modified) else ""), style = MaterialTheme.typography.bodySmall, color = c.muted)
                                 }
                                 if (!e.isDir) Tag(FileOps.kind(e))
@@ -178,7 +179,7 @@ fun FilesScreen(state: AppState, title: String, onBack: () -> Unit) {
                             KCard(onClick = { action = e }, padding = 12.dp) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     IconBadge(iconOf(e), c.danger, 40.dp)
-                                    Column(Modifier.weight(1f)) { Text(e.name, color = c.text, maxLines = 2, style = MaterialTheme.typography.titleMedium); Text(FileOps.kind(e), color = c.muted, style = MaterialTheme.typography.bodySmall) }
+                                    Column(Modifier.weight(1f)) { Text(e.name, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium); Text(FileOps.kind(e), color = c.muted, style = MaterialTheme.typography.bodySmall) }
                                     Text(FileOps.sizeText(e.size), color = c.warn, fontWeight = FontWeight.Bold)
                                 }
                             }
@@ -237,7 +238,7 @@ fun FilesScreen(state: AppState, title: String, onBack: () -> Unit) {
     action?.let { e ->
         AlertDialog(
             onDismissRequest = { action = null },
-            title = { Text(e.name, maxLines = 2) },
+            title = { Text(e.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
             text = { Text(FileOps.kind(e) + " · " + FileOps.sizeText(e.size)) },
             confirmButton = {
                 Column {

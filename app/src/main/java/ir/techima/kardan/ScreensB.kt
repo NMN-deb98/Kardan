@@ -201,7 +201,7 @@ fun ContactsScreen(state: AppState, title: String, onBack: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(ct.name, style = MaterialTheme.typography.titleMedium, color = c.text)
-                        Text(Persian.digits(ct.number), color = c.muted)
+                        LtrText(Persian.digits(ct.number), color = c.muted)
                     }
                     IconButton(onClick = { host.dial(ct.number) }) { Icon(Icons.Filled.Call, "تماس", tint = c.ok) }
                     IconButton(onClick = { host.sms(ct.number) }) { Icon(Icons.Filled.Message, "پیامک", tint = c.accent) }

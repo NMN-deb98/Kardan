@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
@@ -128,8 +131,11 @@ fun KField(
     visual: VisualTransformation = VisualTransformation.None, trailing: (@Composable () -> Unit)? = null, placeholder: String? = null
 ) {
     val c = K.c
+    val ltrInput = keyboard == KeyboardType.Phone || keyboard == KeyboardType.Number || keyboard == KeyboardType.Uri ||
+        keyboard == KeyboardType.Email || keyboard == KeyboardType.NumberPassword
+    val textStyle = if (ltrInput) LocalTextStyle.current.merge(TextStyle(textDirection = TextDirection.Ltr, textAlign = TextAlign.Right)) else LocalTextStyle.current
     OutlinedTextField(
-        value = value, onValueChange = onChange, modifier = modifier.fillMaxWidth(), label = { Text(label) },
+        value = value, onValueChange = onChange, modifier = modifier.fillMaxWidth(), label = { Text(label) }, textStyle = textStyle,
         singleLine = singleLine, minLines = minLines, visualTransformation = visual, trailingIcon = trailing,
         placeholder = if (placeholder != null) { { Text(placeholder, color = c.muted) } } else null,
         keyboardOptions = KeyboardOptions(keyboardType = keyboard), shape = RoundedCornerShape(14.dp),
@@ -192,3 +198,10 @@ fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifie
 
 @Composable
 fun Spacer8() = Spacer(Modifier.height(8.dp))
+
+
+/** Text that must read left-to-right inside an RTL screen (phone numbers, links, codes). */
+@Composable
+fun LtrText(text: String, modifier: Modifier = Modifier, color: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified, style: TextStyle = LocalTextStyle.current) {
+    Text(text, modifier = modifier, color = color, style = style.merge(TextStyle(textDirection = TextDirection.Ltr, textAlign = TextAlign.Right)))
+}
