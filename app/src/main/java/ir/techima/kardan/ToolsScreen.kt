@@ -17,6 +17,8 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.DataUsage
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lightbulb
@@ -64,6 +66,8 @@ object Tools {
         ToolInfo(AppRoute.PASSGEN, "رمزساز", "رمز تصادفی و قوی، آفلاین", Icons.Filled.Key, G_PHONE, 4),
         ToolInfo(AppRoute.VAULT, "گاوصندوق رمزها", "رمزهایت را رمزگذاری‌شده نگه دار", Icons.Filled.Lock, G_PHONE, 4),
         ToolInfo(AppRoute.DEVICE, "اطلاعات دستگاه", "حافظه، باتری، شبکه و نسخه", Icons.Filled.PhoneAndroid, G_PHONE, 1),
+        ToolInfo(AppRoute.FILES, "مدیریت فایل‌ها", "مرور، حجیم‌ها، تکراری‌ها، حذف و تغییر نام", Icons.Filled.Folder, G_DATA, 2),
+        ToolInfo(AppRoute.PDFTOOLS, "PDF و عکس", "عکس به PDF، ادغام PDF، کم‌حجم کردن عکس", Icons.Filled.PictureAsPdf, G_DATA, 4),
         ToolInfo(AppRoute.MOVIES, "فهرست تماشا", "فیلم و سریال‌هایی که می‌خواهی ببینی", Icons.Filled.Movie, G_DATA, 2),
         ToolInfo(AppRoute.CONTACTS, "تماس سریع", "شماره‌های مهم، با یک لمس", Icons.Filled.Contacts, G_DATA, 3),
         ToolInfo(AppRoute.BACKUP, "پشتیبان‌گیری", "خروجی و بازیابی اطلاعات برنامه", Icons.Filled.Backup, G_DATA, 0),
@@ -119,6 +123,9 @@ fun ToolScreen(state: AppState, route: AppRoute) {
         AppRoute.MOVIES -> MoviesScreen(state, title, back)
         AppRoute.BACKUP -> BackupScreen(state, title, back)
         AppRoute.CONTACTS -> ContactsScreen(state, title, back)
+        AppRoute.FILES -> FilesScreen(state, title, back)
+        AppRoute.PDFTOOLS -> PdfToolsScreen(state, title, back)
+        AppRoute.TROUBLE, AppRoute.COMPARE -> Page(title, null, back) { Text("به‌زودی", color = K.c.muted) }
         AppRoute.PLANNER -> { state.goTab(3) }
     }
 }

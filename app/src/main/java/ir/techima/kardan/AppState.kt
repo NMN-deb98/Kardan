@@ -24,6 +24,19 @@ interface Host {
     fun speak(text: String): Boolean
     fun stopSpeaking()
     fun setSecure(secure: Boolean)
+    // files, documents, camera
+    fun pickTree(onResult: (android.net.Uri?) -> Unit)
+    fun pickDocuments(mimes: Array<String>, multiple: Boolean, onResult: (List<android.net.Uri>) -> Unit)
+    fun createDocument(name: String, mime: String, onResult: (android.net.Uri?) -> Unit)
+    fun takePicture(onResult: (android.net.Uri?) -> Unit)
+    fun viewUri(uri: android.net.Uri, mime: String?)
+    fun shareUri(uri: android.net.Uri, mime: String?)
+    fun openSystemDownloads()
+    // contacts
+    fun hasContactsPermission(): Boolean
+    fun requestContacts(onResult: (Boolean) -> Unit)
+    fun insertContact(name: String?, phone: String?)
+    fun editContact(uri: android.net.Uri)
 }
 
 sealed class Screen {

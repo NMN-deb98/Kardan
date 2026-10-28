@@ -27,7 +27,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +59,34 @@ class MainActivity : ComponentActivity(), Host {
     private var voiceCallback: ((String?) -> Unit)? = null
     private var credCallback: ((Boolean) -> Unit)? = null
     private val handler = Handler(Looper.getMainLooper())
+    private var treeCb: ((Uri?) -> Unit)? = null
+    private var docsCb: ((List<Uri>) -> Unit)? = null
+    private var createCb: ((Uri?) -> Unit)? = null
+    private var pictureCb: ((Uri?) -> Unit)? = null
+    private var pictureUri: Uri? = null
+    private var contactsCb: ((Boolean) -> Unit)? = null
+
+    private class CreateAny : ActivityResultContract<Pair<String, String>, Uri?>() {
+        override fun createIntent(context: Context, input: Pair<String, String>): Intent =
+            Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(input.second).putExtra(Intent.EXTRA_TITLE, input.first)
+        override fun parseResult(resultCode: Int, intent: Intent?): Uri? = if (resultCode == Activity.RESULT_OK) intent?.data else null
+    }
+    private val treeLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            try { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) } catch (_: Exception) { }
+        }
+        treeCb?.invoke(uri); treeCb = null
+    }
+    private val docsLauncher = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        docsCb?.invoke(uris ?: emptyList()); docsCb = null
+    }
+    private val createLauncher = registerForActivityResult(CreateAny()) { uri -> createCb?.invoke(uri); createCb = null }
+    private val pictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        pictureCb?.invoke(if (ok) pictureUri else null); pictureCb = null
+    }
+    private val contactsLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        contactsCb?.invoke(ok); contactsCb = null
+    }
 
     private val notifLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         state.notifOk = granted || Reminders.canNotify(this)
@@ -245,6 +275,64 @@ class MainActivity : ComponentActivity(), Host {
     }
 
     override fun stopSpeaking() { tts?.stop() }
+
+    override fun pickTree(onResult: (Uri?) -> Unit) {
+        treeCb = onResult
+        try { treeLauncher.launch(null) } catch (e: Exception) { treeCb = null; state.say("انتخاب پوشه روی این گوشی ممکن نشد.") }
+    }
+
+    override fun pickDocuments(mimes: Array<String>, multiple: Boolean, onResult: (List<Uri>) -> Unit) {
+        docsCb = onResult
+        try { docsLauncher.launch(mimes) } catch (e: Exception) { docsCb = null; state.say("انتخاب فایل روی این گوشی ممکن نشد.") }
+    }
+
+    override fun createDocument(name: String, mime: String, onResult: (Uri?) -> Unit) {
+        createCb = onResult
+        try { createLauncher.launch(name to mime) } catch (e: Exception) { createCb = null; state.say("ساخت فایل روی این گوشی ممکن نشد.") }
+    }
+
+    override fun takePicture(onResult: (Uri?) -> Unit) {
+        try {
+            val dir = java.io.File(cacheDir, "scans").apply { mkdirs() }
+            val f = java.io.File(dir, "scan_" + System.currentTimeMillis() + ".jpg")
+            val uri = FileProvider.getUriForFile(this, "$packageName.files", f)
+            pictureUri = uri; pictureCb = onResult
+            pictureLauncher.launch(uri)
+        } catch (e: Exception) { pictureCb = null; state.say("باز کردن دوربین ممکن نشد.") }
+    }
+
+    override fun viewUri(uri: Uri, mime: String?) {
+        val i = Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime ?: "*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        try { startActivity(i) } catch (e: Exception) { state.say("برنامه‌ای برای باز کردن این فایل پیدا نشد.") }
+    }
+
+    override fun shareUri(uri: Uri, mime: String?) {
+        val i = Intent(Intent.ACTION_SEND).setType(mime ?: "*/*").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        try { startActivity(Intent.createChooser(i, "اشتراک‌گذاری فایل")) } catch (e: Exception) { state.say("اشتراک‌گذاری ممکن نشد.") }
+    }
+
+    override fun openSystemDownloads() {
+        try { startActivity(Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)) } catch (e: Exception) { state.say("باز کردن دانلودها روی این گوشی ممکن نشد.") }
+    }
+
+    override fun hasContactsPermission(): Boolean = checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+
+    override fun requestContacts(onResult: (Boolean) -> Unit) {
+        if (hasContactsPermission()) { onResult(true); return }
+        contactsCb = onResult
+        contactsLauncher.launch(Manifest.permission.READ_CONTACTS)
+    }
+
+    override fun insertContact(name: String?, phone: String?) {
+        val i = Intent(Intent.ACTION_INSERT, android.provider.ContactsContract.Contacts.CONTENT_URI)
+        if (!name.isNullOrBlank()) i.putExtra(android.provider.ContactsContract.Intents.Insert.NAME, name)
+        if (!phone.isNullOrBlank()) i.putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, phone)
+        try { startActivity(i) } catch (e: Exception) { state.say("برنامهٔ مخاطبان پیدا نشد.") }
+    }
+
+    override fun editContact(uri: Uri) {
+        try { startActivity(Intent(Intent.ACTION_EDIT).setDataAndType(uri, android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE)) } catch (e: Exception) { state.say("ویرایش مخاطب ممکن نشد.") }
+    }
 
     override fun setSecure(secure: Boolean) {
         if (secure) window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
