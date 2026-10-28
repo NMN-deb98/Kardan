@@ -2,6 +2,7 @@ package ir.techima.kardan
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,10 +29,10 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun Page(
     title: String, subtitle: String? = null, onBack: (() -> Unit)? = null,
-    scroll: Boolean = true, content: @Composable ColumnScope.() -> Unit
+    scroll: Boolean = true, trailing: @Composable RowScope.() -> Unit = {}, content: @Composable ColumnScope.() -> Unit
 ) {
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader(title, subtitle, onBack)
+        ScreenHeader(title, subtitle, onBack, trailing)
         val m = if (scroll) Modifier.weight(1f).verticalScroll(rememberScrollState()) else Modifier.weight(1f)
         Column(m.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             content()

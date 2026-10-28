@@ -17,7 +17,9 @@ data class AssistantReply(
     val status: OpStatus,
     val message: String,
     val actions: List<AssistantAction> = emptyList(),
-    val suggestions: List<String> = emptyList()
+    val suggestions: List<String> = emptyList(),
+    /** true when the reply is a short clarifying question rather than a result */
+    val question: Boolean = false
 )
 
 /**
@@ -240,6 +242,20 @@ object Assistant {
                     "اندروید اجازه نمی‌دهد برنامه‌ها این تنظیم را خودکار تغییر دهند. صفحهٔ «$label» را برایت باز می‌کنم؛ تغییر را خودت انجام بده.",
                     listOf(AssistantAction.OpenSettings("باز کردن $label", target)))
             }
+        }
+
+        // ---- ambiguous one-word requests: ask one short question (spec 3.2)
+        val words = t.split(" ").filter { it.isNotBlank() }
+        if (words.size <= 2) {
+            val ask: Pair<String, List<String>>? = when {
+                has(t, "اینترنت", "نت گوشی") -> "درباره اینترنت دقیقاً چه می‌خواهی؟" to listOf("چرا اینترنت گوشی کند است؟", "چطور حجم اینترنت باقی‌مانده را ببینم؟", "می‌خواهم بسته اینترنت بخرم")
+                has(t, "ساعت") -> "ساعت کدام شهر یا چه کاری با ساعت؟" to listOf("ساعت استانبول را نشان بده", "تایمر ۱۰ دقیقه", "فردا ساعت ۹ یادآوری بساز: ")
+                has(t, "فایل") -> "با فایل چه کاری می‌خواهی؟" to listOf("چطور یک فایل را به PDF تبدیل کنم؟", "فایل‌های حجیم گوشی را پیدا کن")
+                has(t, "پیام", "واتساپ", "تلگرام") -> "مشکل پیام‌رسان چیست؟" to listOf("چرا پیام‌رسان پیام را دیر می‌رساند؟", "چطور از چت پشتیبان بگیرم؟")
+                has(t, "گوشی") -> "مشکل یا کارت با گوشی چیست؟" to listOf("چرا گوشی من کند شده؟", "چطور فضای گوشی را خالی کنم؟", "اطلاعات گوشی")
+                else -> null
+            }
+            if (ask != null) return AssistantReply(OpStatus.UNKNOWN, ask.first, suggestions = ask.second, question = true)
         }
 
         // ---- guide search

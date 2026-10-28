@@ -63,4 +63,16 @@ class AssistantTest {
         val r = Assistant.reply("وای فای را روشن کن", now, zone)
         assertEquals(OpStatus.NEEDS_USER_ACTION, r.status)
     }
+
+    @Test fun ambiguousAsksOneShortQuestion() {
+        val r = Assistant.reply("اینترنت", now, zone)
+        assertTrue(r.question)
+        assertTrue(r.suggestions.isNotEmpty())
+    }
+
+    @Test fun confirmRepliesCanBeCancelled() {
+        // every action that changes something must first ask for confirmation
+        val r = Assistant.reply("چراغ‌قوه را روشن کن", now, zone)
+        assertEquals(OpStatus.NEEDS_CONFIRM, r.status)
+    }
 }

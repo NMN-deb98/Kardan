@@ -1,6 +1,10 @@
 package ir.techima.kardan
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -75,7 +79,10 @@ fun HomeScreen(state: AppState) {
         reply = Assistant.reply(text, System.currentTimeMillis(), state.zone)
     }
 
-    Page("کاردان", "کارهایت را هوشمندانه انجام بده", scroll = true) {
+    Page("کاردان", "کارهایت را هوشمندانه انجام بده", scroll = true, trailing = {
+        IconButton(onClick = { state.openRoute(AppRoute.SETTINGS) }) { Icon(Icons.Filled.Settings, "تنظیمات", tint = c.muted) }
+        Image(painterResource(R.drawable.kardan_logo), "نشان کاردان", Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)))
+    }) {
         // hero
         Column(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(c.hero).padding(20.dp),
@@ -103,7 +110,12 @@ fun HomeScreen(state: AppState) {
             })
             val r = reply
             if (r != null) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { StatusTag(r.status) }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (r.question) Tag("یک سؤال کوتاه", c.accent) else StatusTag(r.status)
+                    if (r.status == OpStatus.NEEDS_CONFIRM || r.status == OpStatus.NEEDS_USER_ACTION || r.question) {
+                        Chip("انصراف", false) { reply = null; input = ""; if (!r.question) state.say("لغو شد؛ هیچ کاری انجام نشد.") }
+                    }
+                }
                 Text(r.message, style = MaterialTheme.typography.bodyLarge, color = c.text)
                 if (r.actions.isNotEmpty()) {
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -148,6 +160,26 @@ fun HomeScreen(state: AppState) {
                         Text(t.due?.let { Jalali.full(it) } ?: "بدون زمان", style = MaterialTheme.typography.bodySmall, color = c.muted)
                     }
                     if (t.remind) Tag("یادآور", c.accent)
+                }
+            }
+        }
+
+        // categories + visual guides (spec 3.1)
+        SectionTitle("دسته‌بندی قابلیت‌ها")
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Chip("راهنماها", false) { state.goTab(1) }
+            Chip("ابزارها", false) { state.goTab(2) }
+            Chip("برنامه‌ریزی", false) { state.goTab(3) }
+            Chip("فایل‌ها", false) { state.openRoute(AppRoute.FILES) }
+            Chip("ابزار PDF", false) { state.openRoute(AppRoute.PDFTOOLS) }
+            Chip("پشتیبان‌گیری", false) { state.openRoute(AppRoute.BACKUP) }
+        }
+        KCard(onClick = { state.goTab(1) }) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                IconBadge(Icons.Filled.Star, c.accent)
+                Column(Modifier.weight(1f)) {
+                    Text("راهنمای تصویری", style = MaterialTheme.typography.titleMedium, color = c.text)
+                    Text("مراحل کار با گوشی را با نقشهٔ ساده و بدون نیاز به اینترنت ببین.", style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
             }
         }
