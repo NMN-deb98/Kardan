@@ -75,4 +75,29 @@ class AssistantTest {
         val r = Assistant.reply("چراغ‌قوه را روشن کن", now, zone)
         assertEquals(OpStatus.NEEDS_CONFIRM, r.status)
     }
+
+    @Test fun buyPackageNeverPretendsToBuy() {
+        val r = Assistant.reply("می‌خواهم بسته اینترنت بخرم", now, zone)
+        assertEquals(OpStatus.NEEDS_USER_ACTION, r.status)
+        assertTrue(r.actions.any { it is AssistantAction.OpenUrl })
+    }
+    @Test fun paidButNotActiveDoesNotPushRepurchase() {
+        val r = Assistant.reply("پولم کسر شد ولی بسته فعال نشد", now, zone)
+        assertTrue(r.message.contains("دوباره نخر"))
+        assertNotNull(r.actions.firstOrNull { it is AssistantAction.OpenGuide && (it as AssistantAction.OpenGuide).id == "op-paid-not-active" })
+    }
+    @Test fun refusesCardData() {
+        assertEquals(OpStatus.UNSUPPORTED, Assistant.reply("رمز پویا را ذخیره کن", now, zone).status)
+    }
+    @Test fun noAccessToPrivateMessages() {
+        assertEquals(OpStatus.UNSUPPORTED, Assistant.reply("پیام‌های من در تلگرام را بخوان", now, zone).status)
+    }
+    @Test fun addMovieNeedsConfirmation() {
+        val r = Assistant.reply("فیلم جدایی نادر از سیمین را اضافه کن", now, zone)
+        assertEquals(OpStatus.NEEDS_CONFIRM, r.status)
+        assertTrue((r.actions.first() as AssistantAction.AddWatch).title.contains("جدایی"))
+    }
+    @Test fun movieSearchIsHonestlyUnsupported() {
+        assertEquals(OpStatus.UNSUPPORTED, Assistant.reply("یک فیلم معمایی معرفی کن", now, zone).status)
+    }
 }

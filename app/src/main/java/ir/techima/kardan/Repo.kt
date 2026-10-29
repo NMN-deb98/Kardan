@@ -56,13 +56,16 @@ object Repo {
     }
 
     // ---------- watchlist
+    fun watchToJson(it: WatchItem): JSONObject = JSONObject().put("id", it.id).put("title", it.title).put("type", it.type).put("status", it.status)
+        .put("note", it.note).put("rating", it.rating).put("originalTitle", it.originalTitle).put("altNames", it.altNames).put("year", it.year)
+        .put("genre", it.genre).put("summary", it.summary).put("duration", it.duration).put("link", it.link)
+
     fun loadWatch(c: Context): List<WatchItem> = parse(prefs(c).getString("watch", null)) { o ->
-        WatchItem(o.getLong("id"), o.getString("title"), o.optString("type", "فیلم"), o.optString("status", "می‌خواهم ببینم"), o.optString("note", ""), o.optInt("rating", 0))
+        WatchItem(o.getLong("id"), o.getString("title"), o.optString("type", "فیلم"), o.optString("status", "می‌خواهم ببینم"), o.optString("note", ""), o.optInt("rating", 0),
+            o.optString("originalTitle", ""), o.optString("altNames", ""), o.optString("year", ""), o.optString("genre", ""), o.optString("summary", ""), o.optString("duration", ""), o.optString("link", ""))
     }
     fun saveWatch(c: Context, list: List<WatchItem>) {
-        prefs(c).edit().putString("watch", JSONArray().apply {
-            list.forEach { put(JSONObject().put("id", it.id).put("title", it.title).put("type", it.type).put("status", it.status).put("note", it.note).put("rating", it.rating)) }
-        }.toString()).apply()
+        prefs(c).edit().putString("watch", JSONArray().apply { list.forEach { put(watchToJson(it)) } }.toString()).apply()
     }
 
     // ---------- quick contacts
@@ -105,7 +108,7 @@ object Repo {
             loadHabits(c).forEach { put(JSONObject().put("id", it.id).put("title", it.title).put("days", JSONArray(it.days.toList()))) }
         })
         .put("watch", JSONArray().apply {
-            loadWatch(c).forEach { put(JSONObject().put("id", it.id).put("title", it.title).put("type", it.type).put("status", it.status).put("note", it.note).put("rating", it.rating)) }
+            loadWatch(c).forEach { put(watchToJson(it)) }
         })
         .put("contacts", JSONArray().apply {
             loadContacts(c).forEach { put(JSONObject().put("id", it.id).put("name", it.name).put("number", it.number)) }

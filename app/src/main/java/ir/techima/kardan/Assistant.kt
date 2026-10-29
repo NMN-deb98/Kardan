@@ -11,6 +11,8 @@ sealed class AssistantAction {
     data class CreateTask(override val label: String, val title: String, val due: Long?, val remind: Boolean) : AssistantAction()
     data class StartTimer(override val label: String, val seconds: Int) : AssistantAction()
     data class Torch(override val label: String, val on: Boolean) : AssistantAction()
+    data class OpenUrl(override val label: String, val url: String) : AssistantAction()
+    data class AddWatch(override val label: String, val title: String, val type: String) : AssistantAction()
 }
 
 data class AssistantReply(
@@ -144,6 +146,45 @@ object Assistant {
                 "این نسخهٔ کاردان به منبع داده‌ی زنده وصل نیست، پس عدد یا خبر حدسی نمی‌دهم. برای این اطلاعات به یک منبع معتبر و به‌روز مراجعه کن.")
         }
 
+        // ---- honest limits: no control of other apps, no access to private messages
+        if (has(t, "همه برنامه", "کنترل گوشی", "کنترل برنامه", "به جای من", "جای من انجام") && has(t, "کنترل", "انجام بده", "باز کن", "بکن")) {
+            return AssistantReply(OpStatus.UNSUPPORTED,
+                "کاردان نمی‌تواند برنامه‌های دیگر گوشی را کنترل کند و چنین ادعایی هم ندارد؛ اندروید اجازه نمی‌دهد. کارهای محلی خودش را انجام می‌دهد، بخش مناسب را باز می‌کند یا مراحل را نشانت می‌دهد.",
+                listOf(AssistantAction.Open("ابزارهای کاردان", AppRoute.CALC)), suggestions = examples.take(4))
+        }
+        if (has(t, "پیامهای من", "پیام های من", "پیام‌های خصوصی", "چت های من", "چتهای من", "گفتگوهای من") && has(t, "بخوان", "ببین", "دسترسی", "بگرد", "جستجو", "خلاصه")) {
+            return AssistantReply(OpStatus.UNSUPPORTED,
+                "کاردان به پیام‌ها و محتوای داخل پیام‌رسان‌ها (بله، ایتا، روبیکا، سروش پلاس، تلگرام، واتس‌اپ) دسترسی ندارد و نخواهد داشت، مگر روزی یک رابط رسمی و مجوز معتبر وجود داشته باشد. فقط می‌توانم راهنمایی کنم.",
+                listOf(AssistantAction.OpenGuide("راهنمای حریم خصوصی پیام‌رسان‌ها", "messenger-privacy")))
+        }
+
+        // ---- shopping rules: never ask for or store card data
+        if (has(t, "رمز پویا", "رمز دوم", "cvv2", "شماره کارت", "اطلاعات کارت") && has(t, "بگیر", "ذخیره", "نگه دار", "وارد کن", "بنویس", "ثبت")) {
+            return AssistantReply(OpStatus.UNSUPPORTED,
+                "کاردان هرگز شماره کارت، رمز دوم یا رمز پویا را نمی‌گیرد و ذخیره نمی‌کند؛ این اطلاعات را فقط در صفحهٔ رسمی درگاه بانکی وارد کن و به هیچ‌کس نگو.",
+                listOf(AssistantAction.OpenGuide("پرداخت امن با درگاه بانکی", "shop-payment")))
+        }
+        if (has(t, "کسر شد", "پول رفت", "پولم رفت") && has(t, "بسته", "اینترنت", "فعال نشد", "نیومد", "نیامد")) {
+            return AssistantReply(OpStatus.NEEDS_USER_ACTION,
+                "فوراً دوباره نخر. اول وضعیت سفارش را از برنامه یا سایت رسمی اپراتور ببین و پیامک بانک را نگه دار؛ گاهی فعال‌شدن بسته دیرتر انجام می‌شود.",
+                listOf(AssistantAction.OpenGuide("پول کسر شد ولی بسته فعال نشد", "op-paid-not-active")))
+        }
+        if (has(t, "بسته اینترنت", "بسته ی اینترنت", "بسته نت") && has(t, "بخرم", "خرید", "بخر", "تمدید")) {
+            return AssistantReply(OpStatus.NEEDS_USER_ACTION,
+                "خرید را خودم انجام نمی‌دهم و قیمت زنده هم ندارم. از برنامه یا سایت رسمی اپراتورت بخر؛ راهنمای خرید امن و ابزار مقایسه آماده است. هیچ پرداختی بدون تأیید خودت انجام نمی‌شود.",
+                listOf(
+                    AssistantAction.OpenGuide("خرید امن بستهٔ اینترنت", "op-buy-safe"),
+                    AssistantAction.Open("مقایسهٔ بستهٔ اینترنت", AppRoute.PACKAGE),
+                    AssistantAction.OpenUrl("پنل رسمی همراه اول", "https://my.mci.ir"),
+                    AssistantAction.OpenUrl("پنل رسمی ایرانسل", "https://my.irancell.ir"),
+                    AssistantAction.OpenUrl("پنل رسمی رایتل", "https://my.rightel.ir")
+                ))
+        }
+        if (has(t, "خرید اینترنتی", "فروشنده", "مرجوع", "لغو سفارش", "کد رهگیری", "پیگیری سفارش", "فروشگاه")) {
+            val g = GuideData.search(raw, 3).filter { it.category == GuideData.categories[3] }
+            if (g.isNotEmpty()) return AssistantReply(OpStatus.DONE, "این راهنماهای خرید اینترنتی به درخواستت می‌خورد. کاردان خرید نمی‌کند و اطلاعات کارت نمی‌خواهد:", g.map { AssistantAction.OpenGuide(it.title, it.id) })
+        }
+
         // ---- timer
         if (has(t, "تایمر", "زمان سنج", "زمانسنج")) {
             val m = Regex("(\\d{1,3}|" + wordNumbers.keys.joinToString("|") + ")\\s*(ثانیه|دقیقه|ساعت)").find(t)
@@ -212,9 +253,20 @@ object Assistant {
         if (has(t, "گاوصندوق", "ذخیره رمز", "مدیر رمز", "رمزهایم", "رمزهای من")) return AssistantReply(OpStatus.NEEDS_USER_ACTION, "گاوصندوق رمزها با قفل صفحهٔ خودِ گوشی باز می‌شود؛ باید هویتت را تأیید کنی.", listOf(AssistantAction.Open("باز کردن گاوصندوق", AppRoute.VAULT)))
         if (has(t, "اطلاعات گوشی", "مشخصات گوشی", "مشخصات دستگاه", "اطلاعات دستگاه", "نسخه اندروید", "مدل گوشی", "حافظه رم", "فضای خالی", "ظرفیت حافظه", "وضعیت باتری")) return AssistantReply(OpStatus.DONE, "اطلاعات دستگاه آماده است.", listOf(AssistantAction.Open("اطلاعات دستگاه", AppRoute.DEVICE)))
         if (has(t, "پشتیبان", "بکاپ", "backup")) return AssistantReply(OpStatus.DONE, "می‌توانی از کارها و فهرست‌های کاردان فایل پشتیبان بگیری یا بازیابی کنی.", listOf(AssistantAction.Open("پشتیبان‌گیری", AppRoute.BACKUP), AssistantAction.OpenGuide("راهنمای پشتیبان‌گیری", "backup-basics")))
-        if (has(t, "فیلم", "سریال", "انیمیشن", "مستند")) return AssistantReply(OpStatus.UNSUPPORTED,
-            "جست‌وجوی آنلاین فیلم و سریال هنوز در کاردان نیست و لینک تماشا هم نمی‌سازم. اما فهرست تماشای شخصی‌ات را می‌توانی بسازی و مرتب کنی.",
-            listOf(AssistantAction.Open("فهرست تماشای من", AppRoute.MOVIES)))
+        if (has(t, "فیلم", "سریال", "انیمیشن", "مستند")) {
+            val type = when { has(t, "سریال") -> "سریال"; has(t, "انیمیشن") -> "انیمیشن"; has(t, "مستند") -> "مستند"; else -> "فیلم" }
+            if (has(t, "اضافه کن", "ثبت کن", "بنویس", "به فهرست", "به لیست")) {
+                var title = " " + raw.replace(Regex("[:：،,؛.!؟?]"), " ") + " "
+                listOf("لطفا", "لطفاً", "را", "رو", "به فهرست تماشا", "به فهرست", "به لیست", "اضافه کن", "ثبت کن", "بنویس", "فیلم", "سریال", "انیمیشن", "مستند")
+                    .sortedByDescending { it.length }.forEach { title = title.replace(" $it ", " ").replace(" $it ", " ") }
+                title = title.replace(Regex("\\s+"), " ").trim()
+                if (title.length >= 2) return AssistantReply(OpStatus.NEEDS_CONFIRM, "«$title» را به فهرست تماشا (${type}) اضافه کنم؟",
+                    listOf(AssistantAction.AddWatch("تأیید و افزودن", title, type)))
+            }
+            return AssistantReply(OpStatus.UNSUPPORTED,
+                "کاتالوگ آنلاین فیلم و سریال هنوز در کاردان وصل نیست، پس پوستر، امتیاز یا لینک تماشا از خودم نمی‌سازم. فهرست تماشای خودت با نام فارسی و اصلی، سال، ژانر و خلاصه آماده است و جست‌وجویش غلط تایپی را هم تحمل می‌کند. برای افزودن بگو: «فیلم … را اضافه کن».",
+                listOf(AssistantAction.Open("فیلم و سریال من", AppRoute.MOVIES)))
+        }
         if (has(t, "زنگ بزن", "تماس بگیر", "پیامک بزن", "اس ام اس", "مخاطب")) return AssistantReply(OpStatus.NEEDS_CONFIRM,
             "برای امنیت، خودم تماس یا پیامک نمی‌فرستم. مخاطبان منتخب را بساز؛ با لمس هر کدام، شماره‌گیر یا پیام‌رسان گوشی با همان شماره باز می‌شود و تو تأیید می‌کنی.",
             listOf(AssistantAction.Open("مخاطبان منتخب", AppRoute.CONTACTS)))

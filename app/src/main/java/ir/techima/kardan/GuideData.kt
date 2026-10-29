@@ -19,11 +19,40 @@ data class Guide(
     val links: List<GuideLink> = emptyList(),
     val route: AppRoute? = null,
     val routeLabel: String? = null,
-    val keywords: String = ""
+    val keywords: String = "",
+    /** زیرگروه داخل یک دسته، مثلاً نام پیام‌رسان یا اپراتور */
+    val group: String? = null,
+    /** نسخهٔ برنامه یا اندرویدی که راهنما برایش نوشته شده */
+    val appliesTo: String? = null,
+    /** ظاهر برنامه‌ها زود عوض می‌شود؛ راهنمای وابسته به ظاهر زودتر «قدیمی» حساب می‌شود */
+    val volatile: Boolean = false,
+    /** ماه آخرین بازبینی به‌صورت yyyy-MM */
+    val reviewed: String = GuideData.REVIEWED_YM
 )
 
 object GuideData {
     const val REVIEWED = "آبان ۱۴۰۵"
+    const val REVIEWED_YM = "2026-10"
+    const val APPLIES_DEFAULT = "اندروید ۸ تا ۱۵"
+    private const val STALE_VOLATILE_MONTHS = 4
+    private const val STALE_MONTHS = 12
+
+    /** تعداد ماه‌های گذشته از بازبینی یک راهنما (صفر یا بیشتر). */
+    fun monthsSince(reviewed: String, nowMillis: Long): Int {
+        val p = reviewed.split("-")
+        val y = p.getOrNull(0)?.toIntOrNull() ?: return 0
+        val m = p.getOrNull(1)?.toIntOrNull() ?: return 0
+        val now = java.util.Calendar.getInstance().apply { timeInMillis = nowMillis }
+        return ((now.get(java.util.Calendar.YEAR) - y) * 12 + (now.get(java.util.Calendar.MONTH) + 1 - m)).coerceAtLeast(0)
+    }
+
+    /** true وقتی راهنما باید با هشدار «ممکن است قدیمی باشد» نمایش داده شود. */
+    fun isStale(g: Guide, nowMillis: Long = System.currentTimeMillis()): Boolean =
+        monthsSince(g.reviewed, nowMillis) >= (if (g.volatile) STALE_VOLATILE_MONTHS else STALE_MONTHS)
+
+    /** گروه‌های داخل هر دسته (برای فیلتر دوم در صفحهٔ راهنماها). */
+    fun groupsOf(category: String): List<String> =
+        all.filter { it.category == category }.mapNotNull { it.group }.distinct()
     const val NOTE = "نام و جای گزینه‌ها بسته به برند گوشی و نسخهٔ اندروید ممکن است کمی فرق کند. اگر گزینه‌ای را پیدا نکردید، از جست‌وجوی بالای صفحهٔ تنظیمات گوشی کمک بگیرید."
 
     val categories = listOf(
@@ -473,7 +502,7 @@ object GuideData {
             emptyList(), null, keywords = "تماس تصویری ویدیو کال خانواده")
     )
 
-    val all: List<Guide> by lazy { core + GuideExtra.items }
+    val all: List<Guide> by lazy { core + GuideExtra.items + GuideMessengers.items + GuideMore.items }
 
     fun operators() = listOf(
         GuideLink("همراه اول (my.mci.ir)", "https://my.mci.ir"),
@@ -490,7 +519,7 @@ object GuideData {
         val words = q.split(" ").filter { it.length >= 2 }.ifEmpty { listOf(q) }
         return all.map { g ->
             val title = Persian.normalize(g.title)
-            val kw = Persian.normalize(g.keywords + " " + g.category)
+            val kw = Persian.normalize(g.keywords + " " + g.category + " " + (g.group ?: ""))
             val body = Persian.normalize(g.summary + " " + g.steps.joinToString(" "))
             var score = 0
             if (title.contains(q)) score += 10
@@ -498,6 +527,11 @@ object GuideData {
                 if (title.contains(w)) score += 4
                 if (kw.contains(w)) score += 3
                 if (body.contains(w)) score += 1
+            }
+            // غلط تایپی رایج: یک حرف کم یا زیاد در یکی از واژه‌های عنوان/کلیدواژه
+            if (score == 0 && q.length >= 4) {
+                val pool = (title + " " + kw).split(" ").filter { it.length >= 3 }
+                if (words.any { w -> w.length >= 4 && pool.any { p -> Fuzzy.within(p, w, 1) } }) score = 2
             }
             g to score
         }.filter { it.second > 0 }.sortedByDescending { it.second }.map { it.first }.take(limit)

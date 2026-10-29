@@ -105,54 +105,6 @@ fun SettingsScreen(state: AppState, title: String, onBack: () -> Unit) {
 }
 
 @Composable
-fun MoviesScreen(state: AppState, title: String, onBack: () -> Unit) {
-    val c = K.c
-    val host = LocalHost.current
-    var name by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf(Categories.watchTypes[0]) }
-    var filter by remember { mutableStateOf<String?>(null) }
-    Page(title, "فهرست شخصی خودت؛ بدون لینک دانلود و بدون ادعای دسترسی به پلتفرم‌ها", onBack) {
-        KCard {
-            KField(name, { name = it }, "نام فیلم یا سریال")
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { Categories.watchTypes.forEach { t -> Chip(t, type == t) { type = t } } }
-            KButton("افزودن به فهرست", {
-                if (name.isBlank()) state.say("نام را بنویس.") else { state.watch.add(0, WatchItem(state.newId(), name.trim(), type)); state.saveWatch(); name = "" }
-            }, Modifier.fillMaxWidth(), icon = Icons.Filled.Add)
-        }
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Chip("همه", filter == null) { filter = null }
-            Categories.watchStatus.forEach { k -> Chip(k, filter == k) { filter = if (filter == k) null else k } }
-        }
-        val list = state.watch.filter { filter == null || it.status == filter }
-        if (list.isEmpty()) EmptyState(Icons.Filled.Movie, "فهرست خالی است", "هر چیزی که دوست داری ببینی را اینجا یادداشت کن و بعد از دیدن، امتیاز بده.")
-        list.forEach { w ->
-            val idx = state.watch.indexOfFirst { it.id == w.id }
-            KCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(w.title, style = MaterialTheme.typography.titleMedium, color = c.text)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { Tag(w.type); Tag(w.status, if (w.status == "دیده‌شده") c.ok else c.warn) }
-                    }
-                    IconButton(onClick = { state.watch.removeAt(idx); state.saveWatch() }) { Icon(Icons.Filled.Delete, "حذف", tint = c.muted) }
-                }
-                Row {
-                    for (i in 1..5) IconButton(onClick = { state.watch[idx] = w.copy(rating = if (w.rating == i) 0 else i); state.saveWatch() }) {
-                        Icon(if (i <= w.rating) Icons.Filled.Star else Icons.Filled.StarBorder, "امتیاز $i", tint = if (i <= w.rating) c.warn else c.muted)
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KOutlineButton(Categories.watchStatus[(Categories.watchStatus.indexOf(w.status) + 1) % Categories.watchStatus.size].let { "← $it" }, {
-                        val next = Categories.watchStatus[(Categories.watchStatus.indexOf(w.status) + 1) % Categories.watchStatus.size]
-                        state.watch[idx] = w.copy(status = next); state.saveWatch()
-                    })
-                    KOutlineButton("جست‌وجو در مرورگر", { host.openUrl("https://www.google.com/search?q=" + java.net.URLEncoder.encode(w.title + " " + w.type, "UTF-8")) })
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun BackupScreen(state: AppState, title: String, onBack: () -> Unit) {
     val c = K.c
     val host = LocalHost.current

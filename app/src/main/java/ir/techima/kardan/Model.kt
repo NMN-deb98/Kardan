@@ -29,7 +29,17 @@ data class WatchItem(
     /** می‌خواهم ببینم، در حال تماشا، دیده‌شده */
     val status: String = "می‌خواهم ببینم",
     val note: String = "",
-    val rating: Int = 0
+    val rating: Int = 0,
+    val originalTitle: String = "",
+    /** نام‌های جایگزین یا املای دیگر، با ویرگول جدا شده */
+    val altNames: String = "",
+    val year: String = "",
+    val genre: String = "",
+    val summary: String = "",
+    /** مدت یا تعداد قسمت‌ها، مثلاً «۱۲۰ دقیقه» یا «۱۰ قسمت» */
+    val duration: String = "",
+    /** لینک تماشای قانونی که خود کاربر وارد کرده است */
+    val link: String = ""
 )
 
 data class QuickContact(val id: Long, val name: String, val number: String)

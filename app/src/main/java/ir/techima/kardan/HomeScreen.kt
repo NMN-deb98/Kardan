@@ -57,6 +57,11 @@ fun runAction(state: AppState, host: Host, a: AssistantAction) {
             state.say(state.saveTask(t))
         }
         is AssistantAction.StartTimer -> { state.say(state.startTimer(a.seconds)); state.openRoute(AppRoute.TIMER) }
+        is AssistantAction.OpenUrl -> host.openUrl(a.url)
+        is AssistantAction.AddWatch -> {
+            state.watch.add(0, WatchItem(state.newId(), a.title, a.type)); state.saveWatch()
+            state.say("به فهرست تماشا اضافه شد.")
+        }
         is AssistantAction.Torch -> {
             val ok = host.setTorch(a.on)
             state.say(if (ok) (if (a.on) "چراغ‌قوه روشن شد." else "چراغ‌قوه خاموش شد.") else "این گوشی چراغ‌قوه ندارد یا دسترسی داده نشد.")
