@@ -110,6 +110,9 @@ fun FilesScreen(state: AppState, title: String, onBack: () -> Unit) {
         else onBack()
     }
 
+    // دکمهٔ برگشت سیستم باید اول یک پوشه عقب برود، نه کل بخش فایل را ببندد
+    BackHandler(enabled = t != null) { backAction() }
+
     Page(title, if (t == null) "فقط پوشه‌هایی که خودت اجازه می‌دهی" else FileOps.treeLabel(t) + stack.joinToString("") { " ‹ " + it.second }, backAction) {
         if (t == null) {
             KCard {

@@ -176,7 +176,7 @@ fun PackageTool(title: String, onBack: () -> Unit) {
         Text("قیمت و حجم را از برنامه یا کد دستوری اپراتور خودت بخوان و اینجا وارد کن تا بهترین گزینه مشخص شود.", color = c.muted, style = MaterialTheme.typography.bodyMedium)
         var p1 by remember { mutableStateOf("") }; var g1 by remember { mutableStateOf("") }; var d1 by remember { mutableStateOf("30") }
         var p2 by remember { mutableStateOf("") }; var g2 by remember { mutableStateOf("") }; var d2 by remember { mutableStateOf("30") }
-        fun num(s: String) = Persian.latinDigits(s).replace(",", "").replace("،", "").toDoubleOrNull()
+        fun num(s: String) = Persian.latinDigits(s).replace(Regex("[,،٬\\s]"), "").toDoubleOrNull()
         @Composable fun block(name: String, p: String, sp: (String) -> Unit, g: String, sg: (String) -> Unit, d: String, sd: (String) -> Unit): Double? {
             val pv = num(p); val gv = num(g); val dv = num(d)
             val ok = pv != null && gv != null && dv != null && gv > 0 && dv > 0 && pv > 0
