@@ -1,5 +1,6 @@
 package ir.techima.kardan
 
+import androidx.activity.compose.BackHandler
 import android.net.Uri
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.horizontalScroll
