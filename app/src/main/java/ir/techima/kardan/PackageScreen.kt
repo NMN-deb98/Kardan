@@ -95,7 +95,7 @@ fun PackageTool(state: AppState, title: String, onBack: () -> Unit) {
                             PackageCatalog.perGb(pk.priceToman, pk.gb)?.let { Text("هر گیگابایت: " + Calc.format(it.toDouble()) + " تومان", style = MaterialTheme.typography.bodySmall, color = c.muted) }
                             if (pk.note.isNotBlank()) Text(pk.note, style = MaterialTheme.typography.bodySmall, color = c.warn)
                         }
-                        KOutlineButton("مقایسه", { fill(pk.name, pk.gb, pk.days, pk.priceToman) })
+                        KOutlineButton("مقایسه", { fill(pk.name, pk.gb!!, pk.days, pk.priceToman) })
                     }
                 }
             }
