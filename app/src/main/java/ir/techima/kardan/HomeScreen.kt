@@ -58,6 +58,9 @@ fun runAction(state: AppState, host: Host, a: AssistantAction) {
         }
         is AssistantAction.StartTimer -> { state.say(state.startTimer(a.seconds)); state.openRoute(AppRoute.TIMER) }
         is AssistantAction.OpenUrl -> host.openUrl(a.url)
+        is AssistantAction.MovieSearch -> { state.pendingMovieQuery = a.query; state.openRoute(AppRoute.MOVIES) }
+        is AssistantAction.Dial -> host.dial(a.number)
+        is AssistantAction.Sms -> host.sms(a.number)
         is AssistantAction.AddWatch -> {
             state.watch.add(0, WatchItem(state.newId(), a.title, a.type)); state.saveWatch()
             state.say("به فهرست تماشا اضافه شد.")
@@ -81,7 +84,14 @@ fun HomeScreen(state: AppState) {
 
     fun ask(text: String) {
         if (text.isBlank()) return
-        reply = Assistant.reply(text, System.currentTimeMillis(), state.zone)
+        reply = Assistant.reply(text, System.currentTimeMillis(), state.zone) { name ->
+            // quick contacts first; phone contacts only if the user already allowed access on the contacts screen
+            val phone = if (host.hasContactsPermission()) {
+                if (state.phoneContacts == null) state.phoneContacts = PhoneContacts.load(state.ctx)
+                state.phoneContacts.orEmpty().map { QuickContact(it.id, it.name, it.number) }
+            } else emptyList()
+            (state.contacts + phone).filter { Fuzzy.matches(it.name, name) }
+        }
     }
 
     Page("کاردان", "کارهایت را هوشمندانه انجام بده", scroll = true, trailing = {

@@ -133,39 +133,6 @@ fun BackupScreen(state: AppState, title: String, onBack: () -> Unit) {
 }
 
 @Composable
-fun ContactsScreen(state: AppState, title: String, onBack: () -> Unit) {
-    val c = K.c
-    val host = LocalHost.current
-    var name by remember { mutableStateOf("") }
-    var number by remember { mutableStateOf("") }
-    Page(title, "فقط شماره‌هایی که خودت اینجا می‌نویسی؛ به مخاطبان گوشی دسترسی نمی‌گیرد", onBack) {
-        KCard {
-            KField(name, { name = it }, "نام (مثلاً پسرم)")
-            KField(number, { number = it }, "شماره", keyboard = KeyboardType.Phone)
-            KButton("افزودن", {
-                val n = Persian.latinDigits(number).filter { it.isDigit() || it == '+' }
-                if (name.isBlank() || n.length < 3) state.say("نام و یک شمارهٔ معتبر وارد کن.") else { state.contacts.add(QuickContact(state.newId(), name.trim(), n)); state.saveContacts(); name = ""; number = "" }
-            }, Modifier.fillMaxWidth(), icon = Icons.Filled.Add)
-        }
-        if (state.contacts.isEmpty()) EmptyState(Icons.Filled.Contacts, "هنوز شماره‌ای نیست", "شماره‌های مهم (خانواده، اورژانس، پزشک) را اضافه کن تا با یک لمس شماره‌گیر باز شود.")
-        state.contacts.toList().forEachIndexed { i, ct ->
-            KCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(ct.name, style = MaterialTheme.typography.titleMedium, color = c.text)
-                        LtrText(Persian.digits(ct.number), color = c.muted)
-                    }
-                    IconButton(onClick = { host.dial(ct.number) }) { Icon(Icons.Filled.Call, "تماس", tint = c.ok) }
-                    IconButton(onClick = { host.sms(ct.number) }) { Icon(Icons.Filled.Message, "پیامک", tint = c.accent) }
-                    IconButton(onClick = { state.contacts.removeAt(i); state.saveContacts() }) { Icon(Icons.Filled.Delete, "حذف", tint = c.muted) }
-                }
-            }
-        }
-        Text("دکمهٔ تماس فقط شماره‌گیر را باز می‌کند و تماس را خودت می‌گیری.", color = c.muted, style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-@Composable
 fun MoreScreen(state: AppState) {
     val c = K.c
     Page("بیشتر", "تنظیمات، پشتیبان و ابزارهای دیگر") {

@@ -170,43 +170,6 @@ fun TextTool(title: String, onBack: () -> Unit) {
 }
 
 @Composable
-fun PackageTool(title: String, onBack: () -> Unit) {
-    val c = K.c
-    Page(title, "قیمت‌ها را خودت وارد می‌کنی؛ هیچ قیمتی از پیش در برنامه نیست", onBack) {
-        Text("قیمت و حجم را از برنامه یا کد دستوری اپراتور خودت بخوان و اینجا وارد کن تا بهترین گزینه مشخص شود.", color = c.muted, style = MaterialTheme.typography.bodyMedium)
-        var p1 by remember { mutableStateOf("") }; var g1 by remember { mutableStateOf("") }; var d1 by remember { mutableStateOf("30") }
-        var p2 by remember { mutableStateOf("") }; var g2 by remember { mutableStateOf("") }; var d2 by remember { mutableStateOf("30") }
-        fun num(s: String) = Persian.latinDigits(s).replace(Regex("[,،٬\\s]"), "").toDoubleOrNull()
-        @Composable fun block(name: String, p: String, sp: (String) -> Unit, g: String, sg: (String) -> Unit, d: String, sd: (String) -> Unit): Double? {
-            val pv = num(p); val gv = num(g); val dv = num(d)
-            val ok = pv != null && gv != null && dv != null && gv > 0 && dv > 0 && pv > 0
-            KCard {
-                Text(name, style = MaterialTheme.typography.titleMedium, color = c.text)
-                KField(p, sp, "قیمت (تومان)", keyboard = KeyboardType.Number)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KField(g, sg, "حجم (گیگابایت)", Modifier.weight(1f), keyboard = KeyboardType.Decimal)
-                    KField(d, sd, "مدت (روز)", Modifier.weight(1f), keyboard = KeyboardType.Number)
-                }
-                if (ok) {
-                    Text("هر گیگابایت: " + Calc.format(Math.round(pv!! / gv!!).toDouble()) + " تومان", color = c.primary, fontWeight = FontWeight.Bold)
-                    Text("هر روز: " + Calc.format(Math.round(pv / dv!!).toDouble()) + " تومان", color = c.muted)
-                }
-            }
-            return if (ok) pv!! / gv!! else null
-        }
-        val a = block("بستهٔ اول", p1, { p1 = it }, g1, { g1 = it }, d1, { d1 = it })
-        val b = block("بستهٔ دوم", p2, { p2 = it }, g2, { g2 = it }, d2, { d2 = it })
-        if (a != null && b != null) {
-            KCard {
-                val better = if (a < b) "بستهٔ اول" else if (b < a) "بستهٔ دوم" else null
-                Text(if (better == null) "هزینهٔ هر گیگابایت دو بسته برابر است." else "$better برای هر گیگابایت ارزان‌تر است (${Calc.format(Math.round(Math.abs(a - b)).toDouble())} تومان کمتر).", color = c.ok, style = MaterialTheme.typography.titleMedium)
-                Text("این مقایسه فقط بر پایهٔ اعداد واردشده است. مالیات، ترافیک شبانه یا نیم‌بها بودن ساعاتی از شبانه‌روز و محدودیت سرعت را هم بررسی کن.", color = c.muted, style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-@Composable
 fun TorchTool(state: AppState, title: String, onBack: () -> Unit) {
     val c = K.c
     val host = LocalHost.current

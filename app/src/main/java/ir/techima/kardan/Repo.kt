@@ -78,6 +78,16 @@ object Repo {
         }.toString()).apply()
     }
 
+    // ---------- packages saved by the user (from the official apps)
+    fun loadMyPackages(c: Context): List<UserPackage> = parse(prefs(c).getString("my_packages", null)) { o ->
+        UserPackage(o.getLong("id"), o.getString("operator"), o.getString("name"), o.getDouble("gb"), o.getInt("days"), o.getLong("price"), o.optLong("addedAt", 0L))
+    }
+    fun saveMyPackages(c: Context, list: List<UserPackage>) {
+        prefs(c).edit().putString("my_packages", JSONArray().apply {
+            list.forEach { put(JSONObject().put("id", it.id).put("operator", it.operator).put("name", it.name).put("gb", it.gb).put("days", it.days).put("price", it.priceToman).put("addedAt", it.addedAt)) }
+        }.toString()).apply()
+    }
+
     // ---------- favourites / settings
     fun loadFavorites(c: Context): List<String> {
         val raw = prefs(c).getString("favorites", null) ?: return emptyList()
@@ -114,6 +124,7 @@ object Repo {
             loadContacts(c).forEach { put(JSONObject().put("id", it.id).put("name", it.name).put("number", it.number)) }
         })
         .put("favorites", JSONArray(loadFavorites(c)))
+        .put("myPackages", JSONArray().apply { loadMyPackages(c).forEach { put(JSONObject().put("id", it.id).put("operator", it.operator).put("name", it.name).put("gb", it.gb).put("days", it.days).put("price", it.priceToman).put("addedAt", it.addedAt)) } })
         .toString(2)
 
     /** Imports a backup produced by [exportJson]. Returns a human readable summary or null if invalid. */
@@ -128,6 +139,10 @@ object Repo {
             arr("watch")?.let { p.putString("watch", it) }
             arr("contacts")?.let { p.putString("contacts", it) }
             arr("favorites")?.let { p.putString("favorites", it) }
+            o.optJSONArray("myPackages")?.let { a ->
+                // exported key names differ slightly ("price"); stored format is identical
+                p.putString("my_packages", a.toString())
+            }
             p.apply()
             val t = o.optJSONArray("tasks")?.length() ?: 0
             val w = o.optJSONArray("watch")?.length() ?: 0

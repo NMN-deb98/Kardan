@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,18 +72,46 @@ fun MoviesScreen(state: AppState, title: String, onBack: () -> Unit) {
     var statusFilter by remember { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<WatchItem?>(null) }
     var creating by remember { mutableStateOf(false) }
+    var prefill by remember { mutableStateOf<WatchItem?>(null) }
+    var gq by remember { mutableStateOf("") }
+    var gScope by remember { mutableStateOf(WebUrls.movieScopes[0]) }
+    var gType by remember { mutableStateOf(Categories.watchTypes[0]) }
+    var webUrl by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.pendingMovieQuery) {
+        state.pendingMovieQuery?.let { gq = it; webUrl = WebUrls.google(it, WebUrls.movieScopes[0]); state.pendingMovieQuery = null }
+    }
     var deleting by remember { mutableStateOf<WatchItem?>(null) }
     val list = MovieSearch.filter(state.watch.toList(), q, typeFilter, statusFilter)
 
-    Page(title, "بخش مستقل فیلم و سریال؛ جدا از جست‌وجوی عمومی اینترنت", onBack) {
+    Page(title, "جست‌وجوی فیلم در گوگل + فهرست تماشای شخصی", onBack) {
         KCard {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(Icons.Filled.Info, null, tint = c.accent)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
                     Text("وضعیت این بخش", style = MaterialTheme.typography.titleMedium, color = c.text)
-                    Text("فهرست شخصی تو با مشخصات کامل (نام فارسی و اصلی، سال، ژانر، خلاصه، مدت، امتیاز) کار می‌کند. کاتالوگ آنلاین با پوستر و امتیاز عمومی هنوز وصل نیست؛ برای وصل‌کردنش باید مجوز استفاده، هزینه، پوشش محتوای فارسی، محدودیت منطقه‌ای و شرایط نمایش پوستر یک منبع رسمی بررسی شود. تا آن موقع داده‌ای حدس زده نمی‌شود و لینک تماشا فقط همان است که خودت وارد کنی.", style = MaterialTheme.typography.bodySmall, color = c.muted)
+                    Text("برای پیدا کردن فیلم و سریال از گوگل استفاده می‌شود (نیاز به اینترنت دارد و عبارت جست‌وجو برای گوگل فرستاده می‌شود). پوستر، امتیاز و لینک‌ها را گوگل نشان می‌دهد؛ کاردان از خودش پوستر یا لینک تماشا نمی‌سازد و دوبله، زیرنویس یا امکان تماشا در ایران را تأیید نمی‌کند. هر چه خواستی را با مشخصاتش در فهرست شخصی خودت نگه دار و بدون اینترنت جست‌وجو کن.", style = MaterialTheme.typography.bodySmall, color = c.muted)
                 }
             }
+        }
+        KCard {
+            Text("جست‌وجوی فیلم و سریال در گوگل", style = MaterialTheme.typography.titleMedium, color = c.text)
+            KField(gq, { gq = it }, "نام فیلم یا سریال، یا مثلاً «فیلم معمایی خوب»", trailing = { Icon(Icons.Filled.Search, null, tint = c.muted) })
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Categories.watchTypes.forEach { t -> Chip(t, gType == t) { gType = t } }
+            }
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                WebUrls.movieScopes.forEach { sc -> Chip(sc, gScope == sc) { gScope = sc } }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KButton("جست‌وجو در گوگل", {
+                    if (gq.isBlank()) state.say("چیزی بنویس تا در گوگل جست‌وجو شود.") else webUrl = WebUrls.google(WebUrls.movieQuery(gq, gType), gScope)
+                }, Modifier.weight(1f), icon = Icons.Filled.Search)
+                KOutlineButton("در مرورگر", {
+                    if (gq.isBlank()) state.say("چیزی بنویس تا در گوگل جست‌وجو شود.") else host.openUrl(WebUrls.google(WebUrls.movieQuery(gq, gType), gScope))
+                }, Modifier.weight(1f), icon = Icons.Filled.OpenInNew)
+            }
+            if (gq.isNotBlank()) KOutlineButton("افزودن «${gq.trim()}» به فهرست من", { prefill = WatchItem(0, gq.trim(), gType); creating = true }, Modifier.fillMaxWidth(), icon = Icons.Filled.Add)
+            Text("اگر صفحه باز نشد، اینترنت یا دسترسی به گوگل مشکل دارد؛ فهرست شخصی پایین بدون اینترنت کار می‌کند.", style = MaterialTheme.typography.bodySmall, color = c.muted)
         }
         KField(q, { q = it }, "جست‌وجو در فهرست: نام فارسی، انگلیسی، ژانر یا سال", trailing = { Icon(Icons.Filled.Search, null, tint = c.muted) })
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -93,7 +122,7 @@ fun MoviesScreen(state: AppState, title: String, onBack: () -> Unit) {
             Chip("هر وضعیت", statusFilter == null) { statusFilter = null }
             Categories.watchStatus.forEach { k -> Chip(k, statusFilter == k) { statusFilter = if (statusFilter == k) null else k } }
         }
-        KButton("افزودن فیلم یا سریال", { creating = true }, Modifier.fillMaxWidth(), icon = Icons.Filled.Add)
+        KButton("افزودن دستی به فهرست", { prefill = null; creating = true }, Modifier.fillMaxWidth(), icon = Icons.Filled.Add)
 
         if (state.watch.isEmpty()) EmptyState(Icons.Filled.Movie, "فهرست خالی است", "هر فیلم، سریال، انیمیشن یا مستندی که می‌خواهی ببینی را با مشخصاتش اینجا بنویس و بعد از دیدن امتیاز بده.")
         else if (list.isEmpty()) EmptyState(Icons.Filled.Search, "نتیجه‌ای در فهرست تو پیدا نشد", "املا را عوض کن یا فیلتر را بردار. این بخش فقط در فهرست خودت می‌گردد و از اینترنت نتیجه نمی‌آورد.")
@@ -137,9 +166,10 @@ fun MoviesScreen(state: AppState, title: String, onBack: () -> Unit) {
         }
     }
 
-    if (creating) WatchEditor(null, onDismiss = { creating = false }) { item ->
+    if (creating) WatchEditor(prefill, isNew = true, onDismiss = { creating = false }) { item ->
         state.watch.add(0, item.copy(id = state.newId())); state.saveWatch(); creating = false
     }
+    webUrl?.let { u -> WebPanel(u, "نتایج گوگل", onClose = { webUrl = null }, onOpenExternal = { host.openUrl(it) }) }
     editing?.let { e ->
         WatchEditor(e, onDismiss = { editing = null }) { item ->
             val i = state.watch.indexOfFirst { it.id == e.id }
@@ -158,7 +188,7 @@ fun MoviesScreen(state: AppState, title: String, onBack: () -> Unit) {
 }
 
 @Composable
-private fun WatchEditor(initial: WatchItem?, onDismiss: () -> Unit, onSave: (WatchItem) -> Unit) {
+private fun WatchEditor(initial: WatchItem?, isNew: Boolean = initial == null, onDismiss: () -> Unit, onSave: (WatchItem) -> Unit) {
     val c = K.c
     val host = LocalHost.current
     var title by remember { mutableStateOf(initial?.title ?: "") }
@@ -174,7 +204,7 @@ private fun WatchEditor(initial: WatchItem?, onDismiss: () -> Unit, onSave: (Wat
     var error by remember { mutableStateOf<String?>(null) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "افزودن به فهرست" else "ویرایش") },
+        title = { Text(if (isNew) "افزودن به فهرست" else "ویرایش") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { Categories.watchTypes.forEach { t -> Chip(t, type == t) { type = t } } }

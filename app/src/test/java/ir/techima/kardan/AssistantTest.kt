@@ -97,7 +97,11 @@ class AssistantTest {
         assertEquals(OpStatus.NEEDS_CONFIRM, r.status)
         assertTrue((r.actions.first() as AssistantAction.AddWatch).title.contains("جدایی"))
     }
-    @Test fun movieSearchIsHonestlyUnsupported() {
-        assertEquals(OpStatus.UNSUPPORTED, Assistant.reply("یک فیلم معمایی معرفی کن", now, zone).status)
+    @Test fun movieRequestAsksBeforeSearchingGoogle() {
+        val r = Assistant.reply("یک فیلم معمایی معرفی کن", now, zone)
+        assertEquals(OpStatus.NEEDS_CONFIRM, r.status)
+        val a = r.actions.first() as AssistantAction.MovieSearch
+        assertTrue(a.query.contains("معمایی"))
+        assertTrue(r.message.contains("اینترنت"))
     }
 }

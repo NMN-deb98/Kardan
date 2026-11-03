@@ -37,6 +37,8 @@ interface Host {
     fun requestContacts(onResult: (Boolean) -> Unit)
     fun insertContact(name: String?, phone: String?)
     fun editContact(uri: android.net.Uri)
+    /** opens the phone app's own call history; Kardan itself never reads the call log */
+    fun openCallLog()
 }
 
 sealed class Screen {
@@ -56,6 +58,11 @@ class AppState(val ctx: Context) {
     val watch = mutableStateListOf<WatchItem>()
     val contacts = mutableStateListOf<QuickContact>()
     val favorites = mutableStateListOf<String>()
+    val myPackages = mutableStateListOf<UserPackage>()
+    /** phone contacts, loaded on demand after the user allowed contacts access */
+    var phoneContacts by mutableStateOf<List<PhoneContact>?>(null)
+    /** a movie search requested by the assistant; consumed by the Movies screen */
+    var pendingMovieQuery by mutableStateOf<String?>(null)
     var settings by mutableStateOf(Settings())
     var notifOk by mutableStateOf(false)
     var message by mutableStateOf<String?>(null)
@@ -75,6 +82,7 @@ class AppState(val ctx: Context) {
         watch.clear(); watch.addAll(Repo.loadWatch(ctx))
         contacts.clear(); contacts.addAll(Repo.loadContacts(ctx))
         favorites.clear(); favorites.addAll(Repo.loadFavorites(ctx))
+        myPackages.clear(); myPackages.addAll(Repo.loadMyPackages(ctx))
         settings = Repo.loadSettings(ctx)
         Persian.latin = settings.latinDigits
         notifOk = Reminders.canNotify(ctx)
@@ -142,6 +150,7 @@ class AppState(val ctx: Context) {
     fun saveHabits() = Repo.saveHabits(ctx, habits.toList())
     fun saveWatch() = Repo.saveWatch(ctx, watch.toList())
     fun saveContacts() = Repo.saveContacts(ctx, contacts.toList())
+    fun saveMyPackages() = Repo.saveMyPackages(ctx, myPackages.toList())
 
     fun toggleFavorite(id: String) {
         if (favorites.contains(id)) favorites.remove(id) else favorites.add(id)

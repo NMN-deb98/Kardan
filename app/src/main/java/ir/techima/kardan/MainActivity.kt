@@ -330,6 +330,13 @@ class MainActivity : ComponentActivity(), Host {
         try { startActivity(i) } catch (e: Exception) { state.say("برنامهٔ مخاطبان پیدا نشد.") }
     }
 
+    override fun openCallLog() {
+        val i = Intent(Intent.ACTION_VIEW).setType("vnd.android.cursor.dir/calls")
+        try { startActivity(i) } catch (e: Exception) {
+            try { startActivity(Intent(Intent.ACTION_DIAL)) } catch (e2: Exception) { state.say("باز کردن سابقهٔ تماس روی این گوشی ممکن نشد.") }
+        }
+    }
+
     override fun editContact(uri: Uri) {
         try { startActivity(Intent(Intent.ACTION_EDIT).setDataAndType(uri, android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE)) } catch (e: Exception) { state.say("ویرایش مخاطب ممکن نشد.") }
     }

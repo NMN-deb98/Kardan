@@ -13,6 +13,9 @@ sealed class AssistantAction {
     data class Torch(override val label: String, val on: Boolean) : AssistantAction()
     data class OpenUrl(override val label: String, val url: String) : AssistantAction()
     data class AddWatch(override val label: String, val title: String, val type: String) : AssistantAction()
+    data class MovieSearch(override val label: String, val query: String) : AssistantAction()
+    data class Dial(override val label: String, val number: String) : AssistantAction()
+    data class Sms(override val label: String, val number: String) : AssistantAction()
 }
 
 data class AssistantReply(
@@ -128,7 +131,11 @@ object Assistant {
         return s.replace(Regex("\\s+"), " ").trim()
     }
 
-    fun reply(input: String, now: Long = System.currentTimeMillis(), zone: TimeZone = TimeZone.getDefault()): AssistantReply {
+    fun reply(
+        input: String, now: Long = System.currentTimeMillis(), zone: TimeZone = TimeZone.getDefault(),
+        /** finds contacts by (part of) a name: quick contacts and, if the user allowed it, phone contacts */
+        lookup: (String) -> List<QuickContact> = { emptyList() }
+    ): AssistantReply {
         val raw = input.trim()
         if (raw.isEmpty()) return AssistantReply(OpStatus.UNKNOWN, "چیزی نوشته نشده است. بنویس چه کاری می‌خواهی.", suggestions = examples.take(4))
         val t = norm(raw)
@@ -263,13 +270,36 @@ object Assistant {
                 if (title.length >= 2) return AssistantReply(OpStatus.NEEDS_CONFIRM, "«$title» را به فهرست تماشا (${type}) اضافه کنم؟",
                     listOf(AssistantAction.AddWatch("تأیید و افزودن", title, type)))
             }
-            return AssistantReply(OpStatus.UNSUPPORTED,
-                "کاتالوگ آنلاین فیلم و سریال هنوز در کاردان وصل نیست، پس پوستر، امتیاز یا لینک تماشا از خودم نمی‌سازم. فهرست تماشای خودت با نام فارسی و اصلی، سال، ژانر و خلاصه آماده است و جست‌وجویش غلط تایپی را هم تحمل می‌کند. برای افزودن بگو: «فیلم … را اضافه کن».",
-                listOf(AssistantAction.Open("فیلم و سریال من", AppRoute.MOVIES)))
+            var qy = " " + raw.replace(Regex("[:：،,؛.!؟?]"), " ") + " "
+            listOf("لطفا", "لطفاً", "یک", "یه", "را", "رو", "معرفی کن", "معرفی", "پیشنهاد بده", "پیشنهاد", "پیدا کن", "جستجو کن", "جست و جو کن", "جست‌وجو کن", "نشان بده", "بگو", "می‌خواهم", "میخوام", "می خوام", "ببینم")
+                .sortedByDescending { it.length }.forEach { qy = qy.replace(" $it ", " ") }
+            qy = qy.replace(Regex("\\s+"), " ").trim()
+            if (qy.isBlank()) qy = type
+            if (!qy.startsWith("بهترین") && !has(t, "بهترین")) qy = "بهترین $qy"
+            return AssistantReply(OpStatus.NEEDS_CONFIRM,
+                "برای پیدا کردن «$qy» در گوگل جست‌وجو کنم؟ نیاز به اینترنت دارد و عبارت جست‌وجو برای گوگل فرستاده می‌شود؛ پوستر، امتیاز و لینک‌ها را خود گوگل نشان می‌دهد و کاردان لینک تماشا نمی‌سازد.",
+                listOf(AssistantAction.MovieSearch("جست‌وجو در گوگل", qy), AssistantAction.Open("فیلم و سریال من", AppRoute.MOVIES)))
         }
-        if (has(t, "زنگ بزن", "تماس بگیر", "پیامک بزن", "اس ام اس", "مخاطب")) return AssistantReply(OpStatus.NEEDS_CONFIRM,
-            "برای امنیت، خودم تماس یا پیامک نمی‌فرستم. مخاطبان منتخب را بساز؛ با لمس هر کدام، شماره‌گیر یا پیام‌رسان گوشی با همان شماره باز می‌شود و تو تأیید می‌کنی.",
-            listOf(AssistantAction.Open("مخاطبان منتخب", AppRoute.CONTACTS)))
+        if (has(t, "زنگ بزن", "تماس بگیر", "تماس با", "پیامک بزن", "پیام بده", "اس ام اس", "مخاطب", "شماره")) {
+            val sms = has(t, "پیامک", "اس ام اس", "پیام بده")
+            var nm = " " + raw.replace(Regex("[:：،,؛.!؟?]"), " ") + " "
+            listOf("لطفا", "لطفاً", "زنگ بزن", "تماس بگیر", "تماس", "پیامک بزن", "پیامک", "پیام بده", "اس ام اس", "جستجوی مخاطب", "جست‌وجوی مخاطب", "مخاطب", "شماره", "به", "با", "برای", "را", "رو", "من", "بگیر")
+                .sortedByDescending { it.length }.forEach { nm = nm.replace(" $it ", " ") }
+            nm = nm.replace(Regex("\\s+"), " ").trim()
+            val verb = if (sms) "پیام‌رسانی پیامک" else "تماس"
+            if (nm.isBlank()) return AssistantReply(OpStatus.UNKNOWN, "با چه کسی؟ اسم مخاطب را بگو.",
+                listOf(AssistantAction.Open("مخاطبان", AppRoute.CONTACTS)), question = true)
+            val found = lookup(nm).distinctBy { PhoneContacts.key(it.number) }.take(5)
+            fun act(c: QuickContact) = if (sms) AssistantAction.Sms("پیامک به ${c.name}", c.number) else AssistantAction.Dial("تماس با ${c.name}", c.number)
+            return when {
+                found.isEmpty() -> AssistantReply(OpStatus.UNKNOWN, "مخاطبی با نام «$nm» پیدا نشد. اگر مجوز مخاطبان را نداده‌ای، از صفحهٔ مخاطبان اجازه بده تا بتوانم در مخاطبان گوشی هم بگردم.",
+                    listOf(AssistantAction.Open("مخاطبان", AppRoute.CONTACTS)))
+                found.size == 1 -> AssistantReply(OpStatus.NEEDS_CONFIRM,
+                    (if (sms) "برنامهٔ پیام را با شمارهٔ «${found[0].name}» باز کنم؟ پیام را خودت می‌نویسی و می‌فرستی." else "شماره‌گیر را با شمارهٔ «${found[0].name}» باز کنم؟ تماس را خودت می‌گیری."),
+                    listOf(act(found[0])))
+                else -> AssistantReply(OpStatus.NEEDS_CONFIRM, "چند مخاطب پیدا شد؛ کدام را می‌خواهی؟", found.map { act(it) }, question = true)
+            }
+        }
         if (has(t, "کارهای من", "لیست کار", "برنامه امروز", "برنامه هفته", "عادت")) return AssistantReply(OpStatus.DONE, "برنامه‌ریزی و کارهایت آماده است.", listOf(AssistantAction.Open("برنامه‌ریزی", AppRoute.PLANNER)))
         if (has(t, "حالت سالمند", "سالمندان", "فونت بزرگ", "بزرگ کن", "تنظیمات کاردان", "حالت تاریک")) return AssistantReply(OpStatus.NEEDS_USER_ACTION, "این‌ها را از تنظیمات کاردان خودت تغییر می‌دهی.", listOf(AssistantAction.Open("تنظیمات کاردان", AppRoute.SETTINGS)))
         if (has(t, "بسته اینترنت", "بسته ی اینترنت", "حجم اینترنت", "قیمت بسته") && has(t, "مقایسه", "ارزان", "گران", "چقدر")) {

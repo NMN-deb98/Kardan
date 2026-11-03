@@ -115,7 +115,7 @@ fun ToolScreen(state: AppState, route: AppRoute) {
         AppRoute.PASSGEN -> PassGenTool(title, back)
         AppRoute.DATECONV -> DateConvTool(title, back)
         AppRoute.TEXTTOOLS -> TextTool(title, back)
-        AppRoute.PACKAGE -> PackageTool(title, back)
+        AppRoute.PACKAGE -> PackageTool(state, title, back)
         AppRoute.TORCH -> TorchTool(state, title, back)
         AppRoute.VAULT -> VaultScreen(state, title, back)
         AppRoute.DEVICE -> DeviceScreen(state, title, back)
